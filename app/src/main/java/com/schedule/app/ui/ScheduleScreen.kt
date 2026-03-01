@@ -8,11 +8,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.FileOpen
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,14 +21,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.schedule.app.data.CourseEvent
 import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.FloatingActionButton
 import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.basic.rememberTopAppBarState
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.icons.Add
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -49,16 +50,16 @@ fun ScheduleScreen(
         topBar = {
             TopAppBar(
                 title = "课程表",
+                actions = {
+                    IconButton(onClick = onImportClick) {
+                        Icon(
+                            imageVector = MiuixIcons.Add,
+                            contentDescription = "导入课程表",
+                        )
+                    }
+                },
                 scrollBehavior = scrollBehavior,
             )
-        },
-        floatingActionButton = {
-            FloatingActionButton(onClick = onImportClick) {
-                Icon(
-                    imageVector = Icons.Outlined.FileOpen,
-                    contentDescription = "导入课程表",
-                )
-            }
         },
     ) { paddingValues ->
         if (!hasData) {
@@ -68,12 +69,10 @@ fun ScheduleScreen(
                     .padding(paddingValues),
                 contentAlignment = Alignment.Center,
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = "请点击右下角按钮导入 .ics 课程表文件",
-                        fontSize = 15.sp,
-                    )
-                }
+                Text(
+                    text = "请点击右上角按钮导入 .ics 课程表文件",
+                    fontSize = 15.sp,
+                )
             }
         } else {
             LazyColumn(
@@ -131,10 +130,6 @@ fun ScheduleScreen(
                         CourseCard(course)
                     }
                 }
-
-                item {
-                    Spacer(modifier = Modifier.height(80.dp))
-                }
             }
         }
     }
@@ -143,6 +138,7 @@ fun ScheduleScreen(
 @Composable
 private fun CourseCard(course: CourseEvent) {
     val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+    val secondaryColor = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f)
 
     Card(
         modifier = Modifier
@@ -157,32 +153,38 @@ private fun CourseCard(course: CourseEvent) {
             color = MiuixTheme.colorScheme.onSurface,
         )
         Spacer(modifier = Modifier.height(8.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = "${course.startTime.format(timeFormatter)} - ${course.endTime.format(timeFormatter)}",
-                fontSize = 14.sp,
-                color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                text = course.section,
-                fontSize = 14.sp,
-                color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-            )
-        }
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = course.location,
-            fontSize = 14.sp,
-            color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+        InfoRow(
+            label = "时间",
+            value = "${course.startTime.format(timeFormatter)} - ${course.endTime.format(timeFormatter)}  ${course.section}",
+            color = secondaryColor,
         )
+        InfoRow(label = "地点", value = course.location, color = secondaryColor)
         if (course.teacher.isNotBlank()) {
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = course.teacher,
-                fontSize = 14.sp,
-                color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-            )
+            InfoRow(label = "教师", value = course.teacher, color = secondaryColor)
         }
+    }
+}
+
+@Composable
+private fun InfoRow(
+    label: String,
+    value: String,
+    color: androidx.compose.ui.graphics.Color,
+) {
+    Row(
+        modifier = Modifier.padding(vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            fontSize = 13.sp,
+            color = color.copy(alpha = 0.5f),
+            modifier = Modifier.width(36.dp),
+        )
+        Text(
+            text = value,
+            fontSize = 14.sp,
+            color = color,
+        )
     }
 }
