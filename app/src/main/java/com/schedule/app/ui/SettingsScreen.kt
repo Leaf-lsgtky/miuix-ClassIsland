@@ -1,6 +1,7 @@
 package com.schedule.app.ui
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,6 +25,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.schedule.app.notification.AlarmScheduler
 import com.schedule.app.util.SettingsStore
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -52,9 +55,9 @@ fun SettingsScreen(
     var advanceMinutes by remember {
         mutableIntStateOf(SettingsStore.getAdvanceMinutes(context))
     }
+    var sliderValue by remember { mutableFloatStateOf(advanceMinutes.toFloat()) }
 
     val showDialog = remember { mutableStateOf(false) }
-    var sliderValue by remember { mutableFloatStateOf(advanceMinutes.toFloat()) }
     var textValue by remember { mutableStateOf(advanceMinutes.toString()) }
 
     Scaffold(
@@ -87,15 +90,44 @@ fun SettingsScreen(
                 SmallTitle(text = "通知")
             }
             item {
-                SuperArrow(
-                    title = "提前提醒时间",
-                    summary = "${advanceMinutes} 分钟",
-                    onClick = {
-                        sliderValue = advanceMinutes.toFloat()
-                        textValue = advanceMinutes.toString()
-                        showDialog.value = true
-                    },
-                )
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp)
+                        .padding(bottom = 6.dp),
+                    insideMargin = PaddingValues(0.dp),
+                ) {
+                    SuperArrow(
+                        title = "提前提醒时间",
+                        summary = "${advanceMinutes} 分钟",
+                        onClick = {
+                            textValue = advanceMinutes.toString()
+                            showDialog.value = true
+                        },
+                    )
+                    Slider(
+                        value = sliderValue,
+                        onValueChange = { newVal ->
+                            sliderValue = newVal
+                        },
+                        onValueChangeFinished = {
+                            val finalValue = sliderValue.toInt().coerceIn(10, 60)
+                            SettingsStore.setAdvanceMinutes(context, finalValue)
+                            advanceMinutes = finalValue
+                            val icsFile = File(context.filesDir, "schedule.ics")
+                            if (icsFile.exists()) {
+                                val icsContent = icsFile.readText()
+                                AlarmScheduler.cancelForCourses(context, icsContent)
+                                AlarmScheduler.scheduleForCourses(context, icsContent)
+                            }
+                        },
+                        valueRange = 10f..60f,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .padding(bottom = 12.dp),
+                    )
+                }
             }
         }
 
@@ -105,48 +137,30 @@ fun SettingsScreen(
             onDismissRequest = { showDialog.value = false },
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = "${sliderValue.toInt()} 分钟",
-                    modifier = Modifier.padding(bottom = 8.dp),
-                )
-                Slider(
-                    value = sliderValue,
-                    onValueChange = { newVal ->
-                        sliderValue = newVal
-                        textValue = newVal.toInt().toString()
-                    },
-                    valueRange = 10f..60f,
-                )
-                Spacer(modifier = Modifier.height(12.dp))
                 TextField(
                     value = textValue,
                     onValueChange = { input ->
-                        val filtered = input.filter { it.isDigit() }
-                        textValue = filtered
-                        filtered.toIntOrNull()?.coerceIn(10, 60)?.let {
-                            sliderValue = it.toFloat()
-                        }
+                        textValue = input.filter { it.isDigit() }
                     },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     label = "分钟 (10-60)",
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(modifier = Modifier.height(16.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.End,
-                ) {
+                Row(modifier = Modifier.fillMaxWidth()) {
                     TextButton(
                         text = "取消",
                         onClick = { showDialog.value = false },
+                        modifier = Modifier.weight(1f),
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     TextButton(
                         text = "确定",
                         onClick = {
-                            val finalValue = sliderValue.toInt().coerceIn(10, 60)
+                            val finalValue = (textValue.toIntOrNull() ?: advanceMinutes).coerceIn(10, 60)
                             SettingsStore.setAdvanceMinutes(context, finalValue)
                             advanceMinutes = finalValue
+                            sliderValue = finalValue.toFloat()
                             showDialog.value = false
                             val icsFile = File(context.filesDir, "schedule.ics")
                             if (icsFile.exists()) {
@@ -155,6 +169,8 @@ fun SettingsScreen(
                                 AlarmScheduler.scheduleForCourses(context, icsContent)
                             }
                         },
+                        colors = ButtonDefaults.textButtonColorsPrimary(),
+                        modifier = Modifier.weight(1f),
                     )
                 }
             }
