@@ -29,7 +29,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.basic.rememberTopAppBarState
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Add
+import top.yukonga.miuix.kmp.icon.extended.AddCircle
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
@@ -64,7 +64,7 @@ fun ScheduleScreen(
                         modifier = Modifier.padding(end = 12.dp),
                     ) {
                         Icon(
-                            imageVector = MiuixIcons.Add,
+                            imageVector = MiuixIcons.AddCircle,
                             contentDescription = "导入课程表",
                         )
                     }
