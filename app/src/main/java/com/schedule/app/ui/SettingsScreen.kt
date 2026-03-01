@@ -23,8 +23,12 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.schedule.app.data.IcsParser
 import com.schedule.app.notification.AlarmScheduler
+import com.schedule.app.notification.NotificationHelper
 import com.schedule.app.util.SettingsStore
+import java.time.LocalDate
+import java.time.LocalTime
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
@@ -126,6 +130,30 @@ fun SettingsScreen(
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp)
                             .padding(bottom = 12.dp),
+                    )
+                    SuperArrow(
+                        title = "通知测试",
+                        summary = "发送最近一门课程的通知",
+                        onClick = {
+                            val icsFile = File(context.filesDir, "schedule.ics")
+                            if (!icsFile.exists()) return@SuperArrow
+                            val icsContent = icsFile.readText()
+                            val now = LocalTime.now()
+                            val today = LocalDate.now()
+                            val tomorrow = today.plusDays(1)
+                            val todayCourses = IcsParser.parse(icsContent, today)
+                            val tomorrowCourses = IcsParser.parse(icsContent, tomorrow)
+                            val nearest = todayCourses.firstOrNull { it.startTime >= now }
+                                ?: tomorrowCourses.firstOrNull()
+                                ?: todayCourses.firstOrNull()
+                            if (nearest != null) {
+                                NotificationHelper.postCourseNotification(
+                                    context,
+                                    nearest,
+                                    "test_notification".hashCode(),
+                                )
+                            }
+                        },
                     )
                 }
             }
