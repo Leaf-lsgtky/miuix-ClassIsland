@@ -1,7 +1,6 @@
 package com.schedule.app.ui
 
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -31,7 +30,9 @@ import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.basic.rememberTopAppBarState
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
+import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.overScrollVertical
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
@@ -43,6 +44,7 @@ fun ScheduleScreen(
     tomorrowCourses: List<CourseEvent>,
     hasData: Boolean,
     onImportClick: () -> Unit,
+    onSettingsClick: () -> Unit,
 ) {
     val scrollBehavior = MiuixScrollBehavior(rememberTopAppBarState())
 
@@ -51,6 +53,12 @@ fun ScheduleScreen(
             TopAppBar(
                 title = "课程表",
                 actions = {
+                    IconButton(onClick = onSettingsClick) {
+                        Icon(
+                            imageVector = MiuixIcons.Settings,
+                            contentDescription = "设置",
+                        )
+                    }
                     IconButton(
                         onClick = onImportClick,
                         modifier = Modifier.padding(end = 12.dp),
@@ -73,7 +81,7 @@ fun ScheduleScreen(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = "请点击右上角按钮导入 .ics 课程表文件",
+                    text = "请点击右上角 + 按钮导入 .ics 课程表文件",
                     fontSize = 15.sp,
                 )
             }
@@ -82,6 +90,7 @@ fun ScheduleScreen(
                 contentPadding = paddingValues,
                 modifier = Modifier
                     .fillMaxSize()
+                    .overScrollVertical()
                     .nestedScroll(scrollBehavior.nestedScrollConnection),
             ) {
                 item {

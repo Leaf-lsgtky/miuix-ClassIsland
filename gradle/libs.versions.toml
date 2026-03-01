@@ -3,6 +3,7 @@ agp = "8.9.1"
 kotlin = "2.3.0"
 compose-bom = "2025.02.00"
 miuix = "0.8.5"
+navigation3 = "1.0.0-alpha04"
 activity-compose = "1.10.1"
 core-ktx = "1.16.0"
 lifecycle = "2.9.0"
@@ -20,6 +21,8 @@ lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtim
 lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycle" }
 miuix = { group = "top.yukonga.miuix.kmp", name = "miuix-android", version.ref = "miuix" }
 miuix-icons = { group = "top.yukonga.miuix.kmp", name = "miuix-icons-android", version.ref = "miuix" }
+miuix-navigation3 = { group = "top.yukonga.miuix.kmp", name = "miuix-navigation3-common-android", version.ref = "miuix" }
+navigation3-runtime = { group = "androidx.navigation3", name = "navigation3-runtime", version.ref = "navigation3" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

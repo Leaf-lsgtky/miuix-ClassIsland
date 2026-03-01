@@ -9,13 +9,24 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.toMutableStateList
+import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberNavBackStack
 import com.schedule.app.data.CourseEvent
 import com.schedule.app.data.IcsParser
 import com.schedule.app.ui.ScheduleScreen
+import com.schedule.app.ui.SettingsScreen
+import top.yukonga.miuix.kmp.basic.NavigationSuite
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
 import java.io.File
 import java.time.LocalDate
+
+sealed interface Screen : NavKey {
+    data object Home : Screen
+    data object Settings : Screen
+}
 
 class MainActivity : ComponentActivity() {
 
@@ -47,11 +58,28 @@ class MainActivity : ComponentActivity() {
         setContent {
             val controller = remember { ThemeController() }
             MiuixTheme(controller = controller) {
-                ScheduleScreen(
-                    todayCourses = todayCourses,
-                    tomorrowCourses = tomorrowCourses,
-                    hasData = hasData,
-                    onImportClick = { openFilePicker() },
+                val backStack = rememberNavBackStack(Screen.Home)
+
+                val entryProviderImpl = entryProvider<Screen> {
+                    entry<Screen.Home> {
+                        ScheduleScreen(
+                            todayCourses = todayCourses,
+                            tomorrowCourses = tomorrowCourses,
+                            hasData = hasData,
+                            onImportClick = { openFilePicker() },
+                            onSettingsClick = { backStack.add(Screen.Settings) },
+                        )
+                    }
+                    entry<Screen.Settings> {
+                        SettingsScreen(
+                            onBack = { backStack.removeLastOrNull() },
+                        )
+                    }
+                }
+
+                NavigationSuite(
+                    backStack = backStack,
+                    entryProvider = entryProviderImpl,
                 )
             }
         }
