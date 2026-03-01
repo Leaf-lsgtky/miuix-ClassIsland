@@ -1,8 +1,13 @@
 package com.schedule.app
 
+import android.Manifest
+import android.app.AlarmManager
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -21,6 +26,8 @@ import androidx.navigation3.runtime.rememberDecoratedNavEntries
 import androidx.navigation3.ui.NavDisplay
 import com.schedule.app.data.CourseEvent
 import com.schedule.app.data.IcsParser
+import com.schedule.app.notification.AlarmScheduler
+import com.schedule.app.notification.NotificationHelper
 import com.schedule.app.ui.ScheduleScreen
 import com.schedule.app.ui.SettingsScreen
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -51,13 +58,23 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) {
+        rescheduleAlarms()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        NotificationHelper.createNotificationChannel(this)
 
         val saved = loadSavedIcsContent()
         if (saved != null) {
             loadCourses(saved)
         }
+
+        requestNotificationPermissionIfNeeded()
 
         setContent {
             val controller = remember { ThemeController() }
@@ -107,6 +124,45 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        val content = loadSavedIcsContent() ?: return
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
+            getSystemService(AlarmManager::class.java).canScheduleExactAlarms()
+        ) {
+            AlarmScheduler.scheduleForCourses(this, content)
+        }
+    }
+
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED
+            ) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                return
+            }
+        }
+        rescheduleAlarms()
+    }
+
+    private fun rescheduleAlarms() {
+        val content = loadSavedIcsContent() ?: return
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val alarmManager = getSystemService(AlarmManager::class.java)
+            if (!alarmManager.canScheduleExactAlarms()) {
+                val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                    data = android.net.Uri.parse("package:$packageName")
+                }
+                startActivity(intent)
+                return
+            }
+        }
+
+        AlarmScheduler.scheduleForCourses(this, content)
+    }
+
     private fun openFilePicker() {
         filePickerLauncher.launch(arrayOf("text/calendar", "*/*"))
     }
@@ -117,6 +173,7 @@ class MainActivity : ComponentActivity() {
         todayCourses = IcsParser.parse(icsContent, today)
         tomorrowCourses = IcsParser.parse(icsContent, tomorrow)
         hasData = true
+        rescheduleAlarms()
     }
 
     private fun saveIcsContent(content: String) {

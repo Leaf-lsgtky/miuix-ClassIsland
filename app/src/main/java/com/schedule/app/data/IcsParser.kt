@@ -7,6 +7,11 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 
+data class ScheduledCourse(
+    val date: LocalDate,
+    val event: CourseEvent,
+)
+
 object IcsParser {
 
     private data class RawEvent(
@@ -24,6 +29,13 @@ object IcsParser {
         return events.filter { isEventOnDate(it, targetDate) }
             .map { toDisplayEvent(it) }
             .sortedBy { it.startTime }
+    }
+
+    fun parseWithDates(icsContent: String, targetDate: LocalDate): List<ScheduledCourse> {
+        val events = parseEvents(icsContent)
+        return events.filter { isEventOnDate(it, targetDate) }
+            .map { ScheduledCourse(date = targetDate, event = toDisplayEvent(it)) }
+            .sortedBy { it.event.startTime }
     }
 
     private fun parseEvents(content: String): List<RawEvent> {
