@@ -12,8 +12,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -37,6 +39,9 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
+
+private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+private val dateFormatter = DateTimeFormatter.ofPattern("M月d日")
 
 @Composable
 fun ScheduleScreen(
@@ -86,6 +91,17 @@ fun ScheduleScreen(
                 )
             }
         } else {
+            val today = remember { LocalDate.now() }
+            val tomorrow = remember { today.plusDays(1) }
+            val todayLabel = remember {
+                val dow = today.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.CHINESE)
+                "今天 · ${today.format(dateFormatter)} $dow"
+            }
+            val tomorrowLabel = remember {
+                val dow = tomorrow.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.CHINESE)
+                "明天 · ${tomorrow.format(dateFormatter)} $dow"
+            }
+
             LazyColumn(
                 contentPadding = paddingValues,
                 modifier = Modifier
@@ -93,16 +109,12 @@ fun ScheduleScreen(
                     .overScrollVertical()
                     .nestedScroll(scrollBehavior.nestedScrollConnection),
             ) {
-                item {
-                    val today = LocalDate.now()
-                    val dayOfWeek = today.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.CHINESE)
-                    SmallTitle(
-                        text = "今天 · ${today.format(DateTimeFormatter.ofPattern("M月d日"))} $dayOfWeek",
-                    )
+                item(key = "today_title") {
+                    SmallTitle(text = todayLabel)
                 }
 
                 if (todayCourses.isEmpty()) {
-                    item {
+                    item(key = "today_empty") {
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -114,21 +126,20 @@ fun ScheduleScreen(
                         }
                     }
                 } else {
-                    items(todayCourses) { course ->
+                    items(
+                        items = todayCourses,
+                        key = { "today_${it.summary}_${it.startTime}" },
+                    ) { course ->
                         CourseCard(course)
                     }
                 }
 
-                item {
-                    val tomorrow = LocalDate.now().plusDays(1)
-                    val dayOfWeek = tomorrow.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.CHINESE)
-                    SmallTitle(
-                        text = "明天 · ${tomorrow.format(DateTimeFormatter.ofPattern("M月d日"))} $dayOfWeek",
-                    )
+                item(key = "tomorrow_title") {
+                    SmallTitle(text = tomorrowLabel)
                 }
 
                 if (tomorrowCourses.isEmpty()) {
-                    item {
+                    item(key = "tomorrow_empty") {
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -140,7 +151,10 @@ fun ScheduleScreen(
                         }
                     }
                 } else {
-                    items(tomorrowCourses) { course ->
+                    items(
+                        items = tomorrowCourses,
+                        key = { "tomorrow_${it.summary}_${it.startTime}" },
+                    ) { course ->
                         CourseCard(course)
                     }
                 }
@@ -151,7 +165,6 @@ fun ScheduleScreen(
 
 @Composable
 private fun CourseCard(course: CourseEvent) {
-    val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
     val secondaryColor = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f)
 
     Card(
@@ -185,7 +198,7 @@ private fun CourseCard(course: CourseEvent) {
 private fun InfoRow(
     label: String,
     value: String,
-    color: androidx.compose.ui.graphics.Color,
+    color: Color,
 ) {
     Row(
         modifier = Modifier.padding(vertical = 2.dp),

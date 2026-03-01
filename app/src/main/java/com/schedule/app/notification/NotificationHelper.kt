@@ -65,48 +65,71 @@ object NotificationHelper {
 
     private fun buildFocusIslandJson(context: Context, course: CourseEvent): String {
         val courseName = course.summary
-        val islandLeft = if (courseName.length > 5) courseName.substring(0, 5) else courseName
-        val islandRight = LocationFormatter.toIslandText(course.location)
-        val timeRange = "${course.startTime.format(timeFormatter)} - ${course.endTime.format(timeFormatter)}"
+        val islandLeftTitle = if (courseName.length > 5) courseName.substring(0, 5) else courseName
+        val islandRightTitle = LocationFormatter.toIslandText(course.location)
+        val startTime = course.startTime.format(timeFormatter)
         val expandedLocation = LocationFormatter.removeCampusPrefix(course.location)
 
         val intentUri = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
         }.toUri(Intent.URI_INTENT_SCHEME)
 
+        val imageTextInfoLeft = JSONObject().apply {
+            put("type", 1)
+            put("textInfo", JSONObject().apply {
+                put("title", islandLeftTitle)
+            })
+        }
+
+        val bigIslandTextInfo = JSONObject().apply {
+            put("title", islandRightTitle)
+            put("showHighlightColor", true)
+        }
+
         val bigIslandArea = JSONObject().apply {
-            put("leftContent", islandLeft)
-            put("rightContent", islandRight)
+            put("imageTextInfoLeft", imageTextInfoLeft)
+            put("textInfo", bigIslandTextInfo)
+        }
+
+        val paramIsland = JSONObject().apply {
+            put("islandProperty", 1)
+            put("bigIslandArea", bigIslandArea)
         }
 
         val baseInfo = JSONObject().apply {
             put("type", 2)
             put("title", courseName)
-            put("content", course.teacher)
+            put("content", if (course.teacher.isNotBlank()) "任课教师：${course.teacher}" else "")
+        }
+
+        val actionInfo = JSONObject().apply {
+            put("actionTitle", "详情")
+            put("actionIntent", intentUri)
+            put("actionIntentType", "2")
+            put("actionBgColor", "#30000000")
         }
 
         val hintInfo = JSONObject().apply {
             put("type", 2)
-            put("title", timeRange)
+            put("title", startTime)
             put("content", "时间")
             put("subTitle", expandedLocation)
             put("subContent", "地点")
-        }
-
-        val actionInfo = JSONObject().apply {
-            put("text", "详情")
-            put("intent", intentUri)
-        }
-
-        val paramV2 = JSONObject().apply {
-            put("bigIslandArea", bigIslandArea)
-            put("baseInfo", baseInfo)
-            put("hintInfo", hintInfo)
             put("actionInfo", actionInfo)
         }
 
-        return JSONObject().apply {
+        val paramV2 = JSONObject().apply {
             put("protocol", 3)
+            put("enableFloat", true)
+            put("updatable", true)
+            put("ticker", "课程提醒：$courseName")
+            put("isShowNotification", true)
+            put("baseInfo", baseInfo)
+            put("hintInfo", hintInfo)
+            put("param_island", paramIsland)
+        }
+
+        return JSONObject().apply {
             put("param_v2", paramV2)
         }.toString()
     }
