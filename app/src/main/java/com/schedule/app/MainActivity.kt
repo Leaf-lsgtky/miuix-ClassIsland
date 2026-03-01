@@ -1,10 +1,15 @@
 package com.schedule.app
 
+import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -12,12 +17,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.toMutableStateList
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
-import androidx.navigation3.runtime.rememberNavBackStack
+import androidx.navigation3.runtime.rememberDecoratedNavEntries
+import androidx.navigation3.ui.NavDisplay
 import com.schedule.app.data.CourseEvent
 import com.schedule.app.data.IcsParser
 import com.schedule.app.ui.ScheduleScreen
 import com.schedule.app.ui.SettingsScreen
-import top.yukonga.miuix.kmp.basic.NavigationSuite
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
 import java.io.File
@@ -48,7 +53,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
 
         val saved = loadSavedIcsContent()
         if (saved != null) {
@@ -57,8 +61,21 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val controller = remember { ThemeController() }
+            val darkMode = isSystemInDarkTheme()
+
+            DisposableEffect(darkMode) {
+                enableEdgeToEdge(
+                    statusBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT) { darkMode },
+                    navigationBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT) { darkMode },
+                )
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    window.isNavigationBarContrastEnforced = false
+                }
+                onDispose {}
+            }
+
             MiuixTheme(controller = controller) {
-                val backStack = rememberNavBackStack(Screen.Home)
+                val backStack = remember { listOf<Screen>(Screen.Home).toMutableStateList() }
 
                 val entryProviderImpl = entryProvider<Screen> {
                     entry<Screen.Home> {
@@ -77,9 +94,14 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                NavigationSuite(
+                val entries = rememberDecoratedNavEntries(
                     backStack = backStack,
                     entryProvider = entryProviderImpl,
+                )
+
+                NavDisplay(
+                    entries = entries,
+                    onBack = { backStack.removeLastOrNull() },
                 )
             }
         }
