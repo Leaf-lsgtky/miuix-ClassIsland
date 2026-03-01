@@ -6,9 +6,9 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -96,6 +96,7 @@ fun ScheduleScreen(
                     item {
                         Card(
                             modifier = Modifier
+                                .fillMaxWidth()
                                 .padding(horizontal = 12.dp)
                                 .padding(bottom = 6.dp),
                             insideMargin = PaddingValues(16.dp),
@@ -121,6 +122,7 @@ fun ScheduleScreen(
                     item {
                         Card(
                             modifier = Modifier
+                                .fillMaxWidth()
                                 .padding(horizontal = 12.dp)
                                 .padding(bottom = 6.dp),
                             insideMargin = PaddingValues(16.dp),
@@ -145,6 +147,7 @@ private fun CourseCard(course: CourseEvent) {
 
     Card(
         modifier = Modifier
+            .fillMaxWidth()
             .padding(horizontal = 12.dp)
             .padding(bottom = 6.dp),
         insideMargin = PaddingValues(16.dp),
@@ -158,9 +161,10 @@ private fun CourseCard(course: CourseEvent) {
         Spacer(modifier = Modifier.height(8.dp))
         InfoRow(
             label = "时间",
-            value = "${course.startTime.format(timeFormatter)} - ${course.endTime.format(timeFormatter)}  ${course.section}",
+            value = "${course.startTime.format(timeFormatter)} - ${course.endTime.format(timeFormatter)}",
             color = secondaryColor,
         )
+        InfoRow(label = "节次", value = course.section, color = secondaryColor)
         InfoRow(label = "地点", value = course.location, color = secondaryColor)
         if (course.teacher.isNotBlank()) {
             InfoRow(label = "教师", value = course.teacher, color = secondaryColor)
