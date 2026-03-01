@@ -51,7 +51,10 @@ fun ScheduleScreen(
             TopAppBar(
                 title = "课程表",
                 actions = {
-                    IconButton(onClick = onImportClick) {
+                    IconButton(
+                        onClick = onImportClick,
+                        modifier = Modifier.padding(end = 12.dp),
+                    ) {
                         Icon(
                             imageVector = MiuixIcons.Add,
                             contentDescription = "导入课程表",

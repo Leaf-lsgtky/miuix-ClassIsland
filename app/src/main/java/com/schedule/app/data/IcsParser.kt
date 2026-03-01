@@ -31,6 +31,7 @@ object IcsParser {
         val lines = unfoldLines(content.lines())
 
         var inEvent = false
+        var inAlarm = false
         var summary = ""
         var dtStart: LocalDateTime? = null
         var dtEnd: LocalDateTime? = null
@@ -44,6 +45,7 @@ object IcsParser {
             when {
                 trimmed == "BEGIN:VEVENT" -> {
                     inEvent = true
+                    inAlarm = false
                     summary = ""
                     dtStart = null
                     dtEnd = null
@@ -59,17 +61,24 @@ object IcsParser {
                         )
                     }
                     inEvent = false
+                    inAlarm = false
                 }
-                inEvent && trimmed.startsWith("SUMMARY:") -> {
+                inEvent && trimmed == "BEGIN:VALARM" -> {
+                    inAlarm = true
+                }
+                inEvent && trimmed == "END:VALARM" -> {
+                    inAlarm = false
+                }
+                inEvent && !inAlarm && trimmed.startsWith("SUMMARY:") -> {
                     summary = trimmed.removePrefix("SUMMARY:")
                 }
-                inEvent && trimmed.startsWith("DTSTART") -> {
+                inEvent && !inAlarm && trimmed.startsWith("DTSTART") -> {
                     dtStart = parseDateTimeLine(trimmed)
                 }
-                inEvent && trimmed.startsWith("DTEND") -> {
+                inEvent && !inAlarm && trimmed.startsWith("DTEND") -> {
                     dtEnd = parseDateTimeLine(trimmed)
                 }
-                inEvent && trimmed.startsWith("RRULE:") -> {
+                inEvent && !inAlarm && trimmed.startsWith("RRULE:") -> {
                     val rule = trimmed.removePrefix("RRULE:")
                     val parts = rule.split(";").mapNotNull {
                         val kv = it.split("=", limit = 2)
@@ -82,10 +91,10 @@ object IcsParser {
                         rruleInterval = it.toIntOrNull() ?: 1
                     }
                 }
-                inEvent && trimmed.startsWith("LOCATION:") -> {
+                inEvent && !inAlarm && trimmed.startsWith("LOCATION:") -> {
                     location = trimmed.removePrefix("LOCATION:")
                 }
-                inEvent && trimmed.startsWith("DESCRIPTION:") -> {
+                inEvent && !inAlarm && trimmed.startsWith("DESCRIPTION:") -> {
                     description = trimmed.removePrefix("DESCRIPTION:")
                 }
             }
