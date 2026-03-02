@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalGlanceApi::class)
+
 package moe.lsgtky.leafisland.notification
 
 import android.content.Context
@@ -33,7 +35,6 @@ object AodRemoteViewsBuilder {
     private val labelColor = ColorProvider(Color.White.copy(alpha = 0.6f))
     private val valueColor = ColorProvider(Color.White.copy(alpha = 0.9f))
 
-    @OptIn(ExperimentalGlanceApi::class)
     fun build(context: Context, course: CourseEvent): RemoteViews = runBlocking {
         val timeRange = "${course.startTime.format(timeFormatter)} - ${course.endTime.format(timeFormatter)}"
 

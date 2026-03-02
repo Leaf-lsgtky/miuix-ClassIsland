@@ -7,6 +7,9 @@ plugins {
 kotlin {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
+        freeCompilerArgs.addAll(
+            "-opt-in=androidx.glance.ExperimentalGlanceApi",
+        )
     }
 }
 
