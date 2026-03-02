@@ -13,6 +13,7 @@ class AlarmReceiver : BroadcastReceiver() {
         const val EXTRA_SUMMARY = "extra_summary"
         const val EXTRA_LOCATION = "extra_location"
         const val EXTRA_TEACHER = "extra_teacher"
+        const val EXTRA_SECTION = "extra_section"
         const val EXTRA_START_TIME = "extra_start_time"
         const val EXTRA_END_TIME = "extra_end_time"
         const val EXTRA_NOTIFICATION_ID = "extra_notification_id"
@@ -37,6 +38,7 @@ class AlarmReceiver : BroadcastReceiver() {
                 val summary = intent.getStringExtra(EXTRA_SUMMARY) ?: return
                 val location = intent.getStringExtra(EXTRA_LOCATION) ?: ""
                 val teacher = intent.getStringExtra(EXTRA_TEACHER) ?: ""
+                val section = intent.getStringExtra(EXTRA_SECTION) ?: ""
                 val startTime = LocalTime.parse(intent.getStringExtra(EXTRA_START_TIME) ?: return)
                 val endTime = LocalTime.parse(intent.getStringExtra(EXTRA_END_TIME) ?: return)
                 val notifId = intent.getIntExtra(EXTRA_NOTIFICATION_ID, summary.hashCode())
@@ -47,7 +49,7 @@ class AlarmReceiver : BroadcastReceiver() {
                     endTime = endTime,
                     location = location,
                     teacher = teacher,
-                    section = "",
+                    section = section,
                 )
                 NotificationHelper.postCourseNotification(context, course, notifId)
             }

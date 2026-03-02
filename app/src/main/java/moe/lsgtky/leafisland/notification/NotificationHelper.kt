@@ -90,11 +90,17 @@ object NotificationHelper {
             setTextViewText(R.id.focus_title, courseName)
             setTextViewText(R.id.focus_time, timeRange)
             setTextViewText(R.id.focus_location, expandedLocation)
+            if (course.section.isNotBlank()) {
+                setTextViewText(R.id.focus_section, course.section)
+                setViewVisibility(R.id.focus_section_row, View.VISIBLE)
+            } else {
+                setViewVisibility(R.id.focus_section_row, View.GONE)
+            }
             if (course.teacher.isNotBlank()) {
                 setTextViewText(R.id.focus_teacher, course.teacher)
-                setViewVisibility(R.id.focus_teacher, View.VISIBLE)
+                setViewVisibility(R.id.focus_teacher_row, View.VISIBLE)
             } else {
-                setViewVisibility(R.id.focus_teacher, View.GONE)
+                setViewVisibility(R.id.focus_teacher_row, View.GONE)
             }
         }
         bundle.putParcelable("miui.focus.rv", rvLight)
@@ -104,11 +110,17 @@ object NotificationHelper {
             setTextViewText(R.id.focus_title, courseName)
             setTextViewText(R.id.focus_time, timeRange)
             setTextViewText(R.id.focus_location, expandedLocation)
+            if (course.section.isNotBlank()) {
+                setTextViewText(R.id.focus_section, course.section)
+                setViewVisibility(R.id.focus_section_row, View.VISIBLE)
+            } else {
+                setViewVisibility(R.id.focus_section_row, View.GONE)
+            }
             if (course.teacher.isNotBlank()) {
                 setTextViewText(R.id.focus_teacher, course.teacher)
-                setViewVisibility(R.id.focus_teacher, View.VISIBLE)
+                setViewVisibility(R.id.focus_teacher_row, View.VISIBLE)
             } else {
-                setViewVisibility(R.id.focus_teacher, View.GONE)
+                setViewVisibility(R.id.focus_teacher_row, View.GONE)
             }
         }
         bundle.putParcelable("miui.focus.rvNight", rvNight)
@@ -150,7 +162,7 @@ object NotificationHelper {
             rv.setViewVisibility(R.id.island_teacher_row, View.GONE)
         }
 
-        rv.setOnClickPendingIntent(R.id.island_action_button, pendingIntent)
+        rv.setOnClickPendingIntent(R.id.island_expand_root, pendingIntent)
 
         return rv
     }

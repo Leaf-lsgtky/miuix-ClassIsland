@@ -39,6 +39,7 @@ object AlarmScheduler {
                 putExtra(AlarmReceiver.EXTRA_SUMMARY, scheduled.event.summary)
                 putExtra(AlarmReceiver.EXTRA_LOCATION, scheduled.event.location)
                 putExtra(AlarmReceiver.EXTRA_TEACHER, scheduled.event.teacher)
+                putExtra(AlarmReceiver.EXTRA_SECTION, scheduled.event.section)
                 putExtra(AlarmReceiver.EXTRA_START_TIME, scheduled.event.startTime.toString())
                 putExtra(AlarmReceiver.EXTRA_END_TIME, scheduled.event.endTime.toString())
                 putExtra(AlarmReceiver.EXTRA_NOTIFICATION_ID, requestCode)

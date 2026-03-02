@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/island_expand_root"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
@@ -88,7 +89,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:layout_marginBottom="8dp">
+        android:orientation="horizontal">
 
         <TextView
             android:layout_width="40dp"
@@ -104,18 +105,5 @@
             android:textSize="14sp"
             android:textColor="#99FFFFFF" />
     </LinearLayout>
-
-    <!-- 详情按钮 -->
-    <TextView
-        android:id="@+id/island_action_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="end"
-        android:background="@drawable/bg_island_button"
-        android:paddingHorizontal="20dp"
-        android:paddingVertical="8dp"
-        android:text="详情"
-        android:textSize="14sp"
-        android:textColor="#FF6CB0FF" />
 
 </LinearLayout>
