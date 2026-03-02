@@ -1,63 +1,18 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
-
-    <!-- Main leaf shape - a stylized leaf tilted at an angle -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M54,24 C42,28 30,40 28,56 C26,68 32,78 42,82 C48,84 54,83 58,80 C64,76 68,68 70,58 C72,48 70,38 66,30 C64,26 58,23 54,24 Z" />
-
-    <!-- Leaf vein - center -->
-    <path
-        android:fillColor="#2E7D50"
-        android:fillAlpha="0.35"
-        android:pathData="M54,28 C50,40 46,52 44,66 C44,72 45,76 47,79"
-        android:strokeWidth="1.8"
-        android:strokeColor="#2E7D50"
-        android:strokeAlpha="0.4" />
-
-    <!-- Leaf veins - left side -->
-    <path
-        android:strokeWidth="1.2"
-        android:strokeColor="#2E7D50"
-        android:strokeAlpha="0.3"
-        android:pathData="M50,38 C44,42 38,48 34,54" />
-    <path
-        android:strokeWidth="1.2"
-        android:strokeColor="#2E7D50"
-        android:strokeAlpha="0.3"
-        android:pathData="M48,48 C42,52 38,58 36,64" />
-    <path
-        android:strokeWidth="1.2"
-        android:strokeColor="#2E7D50"
-        android:strokeAlpha="0.3"
-        android:pathData="M46,58 C42,62 40,68 40,74" />
-
-    <!-- Leaf veins - right side -->
-    <path
-        android:strokeWidth="1.2"
-        android:strokeColor="#2E7D50"
-        android:strokeAlpha="0.3"
-        android:pathData="M54,34 C60,38 64,44 66,50" />
-    <path
-        android:strokeWidth="1.2"
-        android:strokeColor="#2E7D50"
-        android:strokeAlpha="0.3"
-        android:pathData="M52,44 C58,48 62,54 64,60" />
-    <path
-        android:strokeWidth="1.2"
-        android:strokeColor="#2E7D50"
-        android:strokeAlpha="0.3"
-        android:pathData="M48,54 C54,58 58,64 60,70" />
-
-    <!-- Small wave/island accent at bottom - represents "屿" (islet) -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:fillAlpha="0.9"
-        android:pathData="M34,86 C38,82 42,82 46,86 C50,82 54,82 58,86 C62,82 66,82 70,86"
-        android:strokeWidth="2.2"
-        android:strokeColor="#FFFFFF"
-        android:strokeLineCap="round" />
+    android:viewportWidth="1600"
+    android:viewportHeight="1600">
+    <group
+        android:scaleX="1"
+        android:scaleY="-1"
+        android:pivotX="0"
+        android:pivotY="0"
+        android:translateX="135"
+        android:translateY="1183">
+        <path
+            android:fillColor="#3D6B3D"
+            android:fillType="nonZero"
+            android:pathData="M940 420V440Q940 452 935 457.5Q930 463 919 463H413Q403 463 398 457.5Q393 452 393 440V420Q393 408 397.5 403Q402 398 413 398H919Q930 398 935 403Q940 408 940 420ZM1070 -54Q1116 -31 1137 13Q1149 36 1152 69.5Q1155 103 1155 184V582Q1155 663 1152 696Q1149 729 1137 752Q1126 774 1109 791.5Q1092 809 1070 820Q1047 831 1012.5 834Q978 837 900 837H430Q352 837 317.5 834Q283 831 260 820Q238 809 221 791.5Q204 774 193 752Q181 729 178 696Q175 663 175 582V184Q175 103 178 69.5Q181 36 193 13Q214 -31 260 -54Q283 -65 317.5 -68Q352 -71 430 -71H900Q978 -71 1012.5 -68Q1047 -65 1070 -54ZM293 8Q268 20 254 47Q247 59 245.5 76.5Q244 94 244 134V499Q244 539 245.5 556Q247 573 254 586Q268 613 293 625Q306 633 323 634.5Q340 636 380 636H950Q990 636 1007 634.5Q1024 633 1037 625Q1062 613 1076 586Q1083 573 1084.5 556Q1086 539 1086 499V134Q1086 94 1084.5 76.5Q1083 59 1076 47Q1062 20 1037 8Q1024 1 1006 -1Q988 -3 950 -3H380Q342 -3 324 -1Q306 1 293 8Z" />
+    </group>
 </vector>
