@@ -88,14 +88,28 @@ object NotificationHelper {
         // 2. Focus notification main RemoteViews (light)
         val rvLight = RemoteViews(context.packageName, R.layout.layout_focus).apply {
             setTextViewText(R.id.focus_title, courseName)
-            setTextViewText(R.id.focus_subtitle, "$timeRange · $expandedLocation")
+            setTextViewText(R.id.focus_time, timeRange)
+            setTextViewText(R.id.focus_location, expandedLocation)
+            if (course.teacher.isNotBlank()) {
+                setTextViewText(R.id.focus_teacher, course.teacher)
+                setViewVisibility(R.id.focus_teacher, View.VISIBLE)
+            } else {
+                setViewVisibility(R.id.focus_teacher, View.GONE)
+            }
         }
         bundle.putParcelable("miui.focus.rv", rvLight)
 
         // 3. Focus notification main RemoteViews (dark)
         val rvNight = RemoteViews(context.packageName, R.layout.layout_focus_night).apply {
             setTextViewText(R.id.focus_title, courseName)
-            setTextViewText(R.id.focus_subtitle, "$timeRange · $expandedLocation")
+            setTextViewText(R.id.focus_time, timeRange)
+            setTextViewText(R.id.focus_location, expandedLocation)
+            if (course.teacher.isNotBlank()) {
+                setTextViewText(R.id.focus_teacher, course.teacher)
+                setViewVisibility(R.id.focus_teacher, View.VISIBLE)
+            } else {
+                setViewVisibility(R.id.focus_teacher, View.GONE)
+            }
         }
         bundle.putParcelable("miui.focus.rvNight", rvNight)
 
