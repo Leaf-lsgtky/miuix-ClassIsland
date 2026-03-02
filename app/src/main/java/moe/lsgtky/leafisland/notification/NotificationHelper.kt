@@ -5,6 +5,8 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.view.View
+import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
 import moe.lsgtky.leafisland.MainActivity
 import moe.lsgtky.leafisland.R
@@ -45,6 +47,7 @@ object NotificationHelper {
         )
 
         val focusIslandJson = buildFocusIslandJson(context, course)
+        val islandExpandRv = buildIslandExpandRemoteViews(context, course, pendingIntent)
         val timeRange = "${course.startTime.format(timeFormatter)} - ${course.endTime.format(timeFormatter)}"
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
@@ -57,6 +60,7 @@ object NotificationHelper {
             .build()
             .also { notif ->
                 notif.extras.putString("miui.focus.param", focusIslandJson)
+                notif.extras.putParcelable("miui.focus.rv.island.expand", islandExpandRv)
             }
 
         val manager = context.getSystemService(NotificationManager::class.java)
@@ -66,6 +70,38 @@ object NotificationHelper {
     fun cancelAllNotifications(context: Context) {
         val manager = context.getSystemService(NotificationManager::class.java)
         manager.cancelAll()
+    }
+
+    private fun buildIslandExpandRemoteViews(
+        context: Context,
+        course: CourseEvent,
+        pendingIntent: PendingIntent,
+    ): RemoteViews {
+        val rv = RemoteViews(context.packageName, R.layout.layout_island_expand)
+        val timeRange = "${course.startTime.format(timeFormatter)} - ${course.endTime.format(timeFormatter)}"
+        val expandedLocation = LocationFormatter.removeCampusPrefix(course.location)
+
+        rv.setTextViewText(R.id.island_course_name, course.summary)
+        rv.setTextViewText(R.id.island_time, timeRange)
+        rv.setTextViewText(R.id.island_location, expandedLocation)
+
+        if (course.section.isNotBlank()) {
+            rv.setTextViewText(R.id.island_section, course.section)
+            rv.setViewVisibility(R.id.island_section_row, View.VISIBLE)
+        } else {
+            rv.setViewVisibility(R.id.island_section_row, View.GONE)
+        }
+
+        if (course.teacher.isNotBlank()) {
+            rv.setTextViewText(R.id.island_teacher, course.teacher)
+            rv.setViewVisibility(R.id.island_teacher_row, View.VISIBLE)
+        } else {
+            rv.setViewVisibility(R.id.island_teacher_row, View.GONE)
+        }
+
+        rv.setOnClickPendingIntent(R.id.island_action_button, pendingIntent)
+
+        return rv
     }
 
     private fun buildFocusIslandJson(context: Context, course: CourseEvent): String {
