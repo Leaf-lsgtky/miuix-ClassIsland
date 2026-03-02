@@ -7,7 +7,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.glance.GlanceExperimentalApi
+import androidx.glance.ExperimentalGlanceApi
 import androidx.glance.GlanceModifier
 import androidx.glance.appwidget.GlanceRemoteViews
 import androidx.glance.layout.Column
@@ -33,7 +33,7 @@ object AodRemoteViewsBuilder {
     private val labelColor = ColorProvider(Color.White.copy(alpha = 0.6f))
     private val valueColor = ColorProvider(Color.White.copy(alpha = 0.9f))
 
-    @OptIn(GlanceExperimentalApi::class)
+    @OptIn(ExperimentalGlanceApi::class)
     fun build(context: Context, course: CourseEvent): RemoteViews = runBlocking {
         val timeRange = "${course.startTime.format(timeFormatter)} - ${course.endTime.format(timeFormatter)}"
 
