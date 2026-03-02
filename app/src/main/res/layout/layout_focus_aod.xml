@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- 课程名称 -->
+    <TextView
+        android:id="@+id/focus_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="17sp"
+        android:textStyle="bold"
+        android:textColor="#E6FFFFFF"
+        android:layout_marginBottom="8dp" />
+
+    <!-- 时间 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="2dp">
+
+        <TextView
+            android:layout_width="40dp"
+            android:layout_height="wrap_content"
+            android:text="时间"
+            android:textSize="13sp"
+            android:textColor="#99FFFFFF" />
+
+        <TextView
+            android:id="@+id/focus_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:textColor="#E6FFFFFF" />
+    </LinearLayout>
+
+    <!-- 节次 -->
+    <LinearLayout
+        android:id="@+id/focus_section_row"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="2dp">
+
+        <TextView
+            android:layout_width="40dp"
+            android:layout_height="wrap_content"
+            android:text="节次"
+            android:textSize="13sp"
+            android:textColor="#99FFFFFF" />
+
+        <TextView
+            android:id="@+id/focus_section"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:textColor="#E6FFFFFF" />
+    </LinearLayout>
+
+    <!-- 地点 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="2dp">
+
+        <TextView
+            android:layout_width="40dp"
+            android:layout_height="wrap_content"
+            android:text="地点"
+            android:textSize="13sp"
+            android:textColor="#99FFFFFF" />
+
+        <TextView
+            android:id="@+id/focus_location"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:textColor="#E6FFFFFF" />
+    </LinearLayout>
+
+    <!-- 教师 -->
+    <LinearLayout
+        android:id="@+id/focus_teacher_row"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="40dp"
+            android:layout_height="wrap_content"
+            android:text="教师"
+            android:textSize="13sp"
+            android:textColor="#99FFFFFF" />
+
+        <TextView
+            android:id="@+id/focus_teacher"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:textColor="#E6FFFFFF" />
+    </LinearLayout>
+
+</LinearLayout>

@@ -124,11 +124,31 @@ object NotificationHelper {
         }
         bundle.putParcelable("miui.focus.rvNight", rvNight)
 
-        // 4. Island expand RemoteViews
+        // 4. Focus notification AOD RemoteViews
+        val rvAod = RemoteViews(context.packageName, R.layout.layout_focus_aod).apply {
+            setTextViewText(R.id.focus_title, courseName)
+            setTextViewText(R.id.focus_time, timeRange)
+            setTextViewText(R.id.focus_location, course.location)
+            if (course.section.isNotBlank()) {
+                setTextViewText(R.id.focus_section, course.section)
+                setViewVisibility(R.id.focus_section_row, View.VISIBLE)
+            } else {
+                setViewVisibility(R.id.focus_section_row, View.GONE)
+            }
+            if (course.teacher.isNotBlank()) {
+                setTextViewText(R.id.focus_teacher, course.teacher)
+                setViewVisibility(R.id.focus_teacher_row, View.VISIBLE)
+            } else {
+                setViewVisibility(R.id.focus_teacher_row, View.GONE)
+            }
+        }
+        bundle.putParcelable("miui.focus.rvAod", rvAod)
+
+        // 5. Island expand RemoteViews
         val rvIslandExpand = buildIslandExpandRemoteViews(context, course, pendingIntent)
         bundle.putParcelable("miui.focus.rv.island.expand", rvIslandExpand)
 
-        // 5. Ticker text
+        // 6. Ticker text
         bundle.putString("miui.focus.ticker", "课程提醒：$courseName")
 
         return bundle
