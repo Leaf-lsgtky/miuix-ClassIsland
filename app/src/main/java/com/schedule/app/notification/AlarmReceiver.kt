@@ -16,6 +16,7 @@ class AlarmReceiver : BroadcastReceiver() {
         const val EXTRA_START_TIME = "extra_start_time"
         const val EXTRA_END_TIME = "extra_end_time"
         const val EXTRA_NOTIFICATION_ID = "extra_notification_id"
+        const val ACTION_DISMISS = "com.schedule.app.ACTION_DISMISS_NOTIFICATION"
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -24,6 +25,13 @@ class AlarmReceiver : BroadcastReceiver() {
                 NotificationHelper.createNotificationChannel(context)
                 val icsContent = loadSavedIcs(context) ?: return
                 AlarmScheduler.scheduleForCourses(context, icsContent)
+            }
+            ACTION_DISMISS -> {
+                val notifId = intent.getIntExtra(EXTRA_NOTIFICATION_ID, 0)
+                if (notifId != 0) {
+                    val manager = context.getSystemService(android.app.NotificationManager::class.java)
+                    manager.cancel(notifId)
+                }
             }
             else -> {
                 val summary = intent.getStringExtra(EXTRA_SUMMARY) ?: return

@@ -155,6 +155,13 @@ fun SettingsScreen(
                             }
                         },
                     )
+                    SuperArrow(
+                        title = "清除通知",
+                        summary = "清除所有课程提醒通知",
+                        onClick = {
+                            NotificationHelper.cancelAllNotifications(context)
+                        },
+                    )
                 }
             }
         }

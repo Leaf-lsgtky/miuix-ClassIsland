@@ -63,6 +63,11 @@ object NotificationHelper {
         manager.notify(notificationId, notification)
     }
 
+    fun cancelAllNotifications(context: Context) {
+        val manager = context.getSystemService(NotificationManager::class.java)
+        manager.cancelAll()
+    }
+
     private fun buildFocusIslandJson(context: Context, course: CourseEvent): String {
         val courseName = course.summary
         val islandLeftTitle = if (courseName.length > 5) courseName.substring(0, 5) else courseName
