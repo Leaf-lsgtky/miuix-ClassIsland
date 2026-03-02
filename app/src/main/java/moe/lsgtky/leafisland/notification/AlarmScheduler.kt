@@ -1,12 +1,12 @@
-package com.schedule.app.notification
+package moe.lsgtky.leafisland.notification
 
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import com.schedule.app.data.IcsParser
-import com.schedule.app.util.SettingsStore
+import moe.lsgtky.leafisland.data.IcsParser
+import moe.lsgtky.leafisland.util.SettingsStore
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId

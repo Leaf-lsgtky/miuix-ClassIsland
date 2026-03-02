@@ -1,4 +1,4 @@
-package com.schedule.app.data
+package moe.lsgtky.leafisland.data
 
 import java.time.LocalTime
 

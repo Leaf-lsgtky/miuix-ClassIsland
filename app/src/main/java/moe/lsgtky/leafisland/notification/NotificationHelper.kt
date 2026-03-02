@@ -1,4 +1,4 @@
-package com.schedule.app.notification
+package moe.lsgtky.leafisland.notification
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -6,10 +6,10 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
-import com.schedule.app.MainActivity
-import com.schedule.app.R
-import com.schedule.app.data.CourseEvent
-import com.schedule.app.util.LocationFormatter
+import moe.lsgtky.leafisland.MainActivity
+import moe.lsgtky.leafisland.R
+import moe.lsgtky.leafisland.data.CourseEvent
+import moe.lsgtky.leafisland.util.LocationFormatter
 import org.json.JSONObject
 import java.time.format.DateTimeFormatter
 

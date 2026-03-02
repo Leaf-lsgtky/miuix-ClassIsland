@@ -1,4 +1,4 @@
-package com.schedule.app
+package moe.lsgtky.leafisland
 
 import android.Manifest
 import android.app.AlarmManager
@@ -24,12 +24,12 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberDecoratedNavEntries
 import androidx.navigation3.ui.NavDisplay
-import com.schedule.app.data.CourseEvent
-import com.schedule.app.data.IcsParser
-import com.schedule.app.notification.AlarmScheduler
-import com.schedule.app.notification.NotificationHelper
-import com.schedule.app.ui.ScheduleScreen
-import com.schedule.app.ui.SettingsScreen
+import moe.lsgtky.leafisland.data.CourseEvent
+import moe.lsgtky.leafisland.data.IcsParser
+import moe.lsgtky.leafisland.notification.AlarmScheduler
+import moe.lsgtky.leafisland.notification.NotificationHelper
+import moe.lsgtky.leafisland.ui.ScheduleScreen
+import moe.lsgtky.leafisland.ui.SettingsScreen
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
 import java.io.File

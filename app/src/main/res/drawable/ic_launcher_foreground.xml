@@ -1,0 +1,63 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Main leaf shape - a stylized leaf tilted at an angle -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,24 C42,28 30,40 28,56 C26,68 32,78 42,82 C48,84 54,83 58,80 C64,76 68,68 70,58 C72,48 70,38 66,30 C64,26 58,23 54,24 Z" />
+
+    <!-- Leaf vein - center -->
+    <path
+        android:fillColor="#2E7D50"
+        android:fillAlpha="0.35"
+        android:pathData="M54,28 C50,40 46,52 44,66 C44,72 45,76 47,79"
+        android:strokeWidth="1.8"
+        android:strokeColor="#2E7D50"
+        android:strokeAlpha="0.4" />
+
+    <!-- Leaf veins - left side -->
+    <path
+        android:strokeWidth="1.2"
+        android:strokeColor="#2E7D50"
+        android:strokeAlpha="0.3"
+        android:pathData="M50,38 C44,42 38,48 34,54" />
+    <path
+        android:strokeWidth="1.2"
+        android:strokeColor="#2E7D50"
+        android:strokeAlpha="0.3"
+        android:pathData="M48,48 C42,52 38,58 36,64" />
+    <path
+        android:strokeWidth="1.2"
+        android:strokeColor="#2E7D50"
+        android:strokeAlpha="0.3"
+        android:pathData="M46,58 C42,62 40,68 40,74" />
+
+    <!-- Leaf veins - right side -->
+    <path
+        android:strokeWidth="1.2"
+        android:strokeColor="#2E7D50"
+        android:strokeAlpha="0.3"
+        android:pathData="M54,34 C60,38 64,44 66,50" />
+    <path
+        android:strokeWidth="1.2"
+        android:strokeColor="#2E7D50"
+        android:strokeAlpha="0.3"
+        android:pathData="M52,44 C58,48 62,54 64,60" />
+    <path
+        android:strokeWidth="1.2"
+        android:strokeColor="#2E7D50"
+        android:strokeAlpha="0.3"
+        android:pathData="M48,54 C54,58 58,64 60,70" />
+
+    <!-- Small wave/island accent at bottom - represents "屿" (islet) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.9"
+        android:pathData="M34,86 C38,82 42,82 46,86 C50,82 54,82 58,86 C62,82 66,82 70,86"
+        android:strokeWidth="2.2"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round" />
+</vector>

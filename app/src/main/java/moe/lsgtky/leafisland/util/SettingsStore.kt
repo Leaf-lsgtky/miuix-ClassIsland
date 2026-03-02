@@ -1,4 +1,4 @@
-package com.schedule.app.util
+package moe.lsgtky.leafisland.util
 
 import android.content.Context
 

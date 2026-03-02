@@ -1,4 +1,4 @@
-package com.schedule.app.ui
+package moe.lsgtky.leafisland.ui
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -23,10 +23,10 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.schedule.app.data.IcsParser
-import com.schedule.app.notification.AlarmScheduler
-import com.schedule.app.notification.NotificationHelper
-import com.schedule.app.util.SettingsStore
+import moe.lsgtky.leafisland.data.IcsParser
+import moe.lsgtky.leafisland.notification.AlarmScheduler
+import moe.lsgtky.leafisland.notification.NotificationHelper
+import moe.lsgtky.leafisland.util.SettingsStore
 import java.time.LocalDate
 import java.time.LocalTime
 import top.yukonga.miuix.kmp.basic.ButtonDefaults

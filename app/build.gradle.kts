@@ -11,11 +11,11 @@ kotlin {
 }
 
 android {
-    namespace = "com.schedule.app"
+    namespace = "moe.lsgtky.leafisland"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.schedule.app"
+        applicationId = "moe.lsgtky.leafisland"
         minSdk = 26
         targetSdk = 35
         versionCode = 1

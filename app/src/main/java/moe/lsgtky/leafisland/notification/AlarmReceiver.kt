@@ -1,9 +1,9 @@
-package com.schedule.app.notification
+package moe.lsgtky.leafisland.notification
 
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import com.schedule.app.data.CourseEvent
+import moe.lsgtky.leafisland.data.CourseEvent
 import java.io.File
 import java.time.LocalTime
 
@@ -16,7 +16,7 @@ class AlarmReceiver : BroadcastReceiver() {
         const val EXTRA_START_TIME = "extra_start_time"
         const val EXTRA_END_TIME = "extra_end_time"
         const val EXTRA_NOTIFICATION_ID = "extra_notification_id"
-        const val ACTION_DISMISS = "com.schedule.app.ACTION_DISMISS_NOTIFICATION"
+        const val ACTION_DISMISS = "moe.lsgtky.leafisland.ACTION_DISMISS_NOTIFICATION"
     }
 
     override fun onReceive(context: Context, intent: Intent) {

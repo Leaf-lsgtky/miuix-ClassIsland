@@ -1,4 +1,4 @@
-package com.schedule.app.util
+package moe.lsgtky.leafisland.util
 
 object LocationFormatter {
 
