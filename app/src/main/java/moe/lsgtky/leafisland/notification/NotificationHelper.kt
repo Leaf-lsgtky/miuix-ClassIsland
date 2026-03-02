@@ -128,7 +128,11 @@ object NotificationHelper {
         val rvIslandExpand = buildIslandExpandRemoteViews(context, course, pendingIntent)
         bundle.putParcelable("miui.focus.rv.island.expand", rvIslandExpand)
 
-        // 5. Ticker text
+        // 5. AOD RemoteViews (Glance)
+        val rvAod = AodRemoteViewsBuilder.build(context, course)
+        bundle.putParcelable("miui.focus.rvAod", rvAod)
+
+        // 6. Ticker text
         bundle.putString("miui.focus.ticker", "课程提醒：$courseName")
 
         return bundle
