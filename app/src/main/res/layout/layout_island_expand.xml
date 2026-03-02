@@ -28,14 +28,14 @@
             android:layout_height="wrap_content"
             android:text="时间"
             android:textSize="13sp"
-            android:textColor="#61FFFFFF" />
+            android:textColor="#99FFFFFF" />
 
         <TextView
             android:id="@+id/island_time"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textSize="14sp"
-            android:textColor="#99FFFFFF" />
+            android:textColor="#E6FFFFFF" />
     </LinearLayout>
 
     <!-- 节次 -->
@@ -51,14 +51,14 @@
             android:layout_height="wrap_content"
             android:text="节次"
             android:textSize="13sp"
-            android:textColor="#61FFFFFF" />
+            android:textColor="#99FFFFFF" />
 
         <TextView
             android:id="@+id/island_section"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textSize="14sp"
-            android:textColor="#99FFFFFF" />
+            android:textColor="#E6FFFFFF" />
     </LinearLayout>
 
     <!-- 地点 -->
@@ -73,14 +73,14 @@
             android:layout_height="wrap_content"
             android:text="地点"
             android:textSize="13sp"
-            android:textColor="#61FFFFFF" />
+            android:textColor="#99FFFFFF" />
 
         <TextView
             android:id="@+id/island_location"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textSize="14sp"
-            android:textColor="#99FFFFFF" />
+            android:textColor="#E6FFFFFF" />
     </LinearLayout>
 
     <!-- 教师 -->
@@ -95,14 +95,14 @@
             android:layout_height="wrap_content"
             android:text="教师"
             android:textSize="13sp"
-            android:textColor="#61FFFFFF" />
+            android:textColor="#99FFFFFF" />
 
         <TextView
             android:id="@+id/island_teacher"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textSize="14sp"
-            android:textColor="#99FFFFFF" />
+            android:textColor="#E6FFFFFF" />
     </LinearLayout>
 
 </LinearLayout>

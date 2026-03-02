@@ -79,7 +79,6 @@ object NotificationHelper {
         val bundle = Bundle()
         val courseName = course.summary
         val timeRange = "${course.startTime.format(timeFormatter)} - ${course.endTime.format(timeFormatter)}"
-        val expandedLocation = LocationFormatter.removeCampusPrefix(course.location)
 
         // 1. Build param.custom JSON (basic fields + param_island for 摘要态)
         val customParam = buildCustomParamJson(context, course)
@@ -89,7 +88,7 @@ object NotificationHelper {
         val rvLight = RemoteViews(context.packageName, R.layout.layout_focus).apply {
             setTextViewText(R.id.focus_title, courseName)
             setTextViewText(R.id.focus_time, timeRange)
-            setTextViewText(R.id.focus_location, expandedLocation)
+            setTextViewText(R.id.focus_location, course.location)
             if (course.section.isNotBlank()) {
                 setTextViewText(R.id.focus_section, course.section)
                 setViewVisibility(R.id.focus_section_row, View.VISIBLE)
@@ -109,7 +108,7 @@ object NotificationHelper {
         val rvNight = RemoteViews(context.packageName, R.layout.layout_focus_night).apply {
             setTextViewText(R.id.focus_title, courseName)
             setTextViewText(R.id.focus_time, timeRange)
-            setTextViewText(R.id.focus_location, expandedLocation)
+            setTextViewText(R.id.focus_location, course.location)
             if (course.section.isNotBlank()) {
                 setTextViewText(R.id.focus_section, course.section)
                 setViewVisibility(R.id.focus_section_row, View.VISIBLE)
@@ -125,11 +124,14 @@ object NotificationHelper {
         }
         bundle.putParcelable("miui.focus.rvNight", rvNight)
 
-        // 4. Island expand RemoteViews
+        // 4. AOD RemoteViews (same as dark)
+        bundle.putParcelable("miui.focus.rvAod", rvNight)
+
+        // 5. Island expand RemoteViews
         val rvIslandExpand = buildIslandExpandRemoteViews(context, course, pendingIntent)
         bundle.putParcelable("miui.focus.rv.island.expand", rvIslandExpand)
 
-        // 5. Ticker text
+        // 6. Ticker text
         bundle.putString("miui.focus.ticker", "课程提醒：$courseName")
 
         return bundle
@@ -142,11 +144,10 @@ object NotificationHelper {
     ): RemoteViews {
         val rv = RemoteViews(context.packageName, R.layout.layout_island_expand)
         val timeRange = "${course.startTime.format(timeFormatter)} - ${course.endTime.format(timeFormatter)}"
-        val expandedLocation = LocationFormatter.removeCampusPrefix(course.location)
 
         rv.setTextViewText(R.id.island_course_name, course.summary)
         rv.setTextViewText(R.id.island_time, timeRange)
-        rv.setTextViewText(R.id.island_location, expandedLocation)
+        rv.setTextViewText(R.id.island_location, course.location)
 
         if (course.section.isNotBlank()) {
             rv.setTextViewText(R.id.island_section, course.section)
