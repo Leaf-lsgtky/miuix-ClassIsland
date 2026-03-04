@@ -4,7 +4,9 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import moe.lsgtky.leafisland.data.CourseEvent
+import moe.lsgtky.leafisland.data.IcsParser
 import java.io.File
+import java.time.LocalDate
 import java.time.LocalTime
 
 class AlarmReceiver : BroadcastReceiver() {
@@ -26,6 +28,7 @@ class AlarmReceiver : BroadcastReceiver() {
                 NotificationHelper.createNotificationChannel(context)
                 val icsContent = loadSavedIcs(context) ?: return
                 AlarmScheduler.scheduleForCourses(context, icsContent)
+                AlarmScheduler.scheduleAllPushAlarms(context)
             }
             ACTION_DISMISS -> {
                 val notifId = intent.getIntExtra(EXTRA_NOTIFICATION_ID, 0)
@@ -33,6 +36,9 @@ class AlarmReceiver : BroadcastReceiver() {
                     val manager = context.getSystemService(android.app.NotificationManager::class.java)
                     manager.cancel(notifId)
                 }
+            }
+            AlarmScheduler.ACTION_SCHEDULED_PUSH -> {
+                handleScheduledPush(context)
             }
             else -> {
                 val summary = intent.getStringExtra(EXTRA_SUMMARY) ?: return
@@ -54,6 +60,30 @@ class AlarmReceiver : BroadcastReceiver() {
                 NotificationHelper.postCourseNotification(context, course, notifId)
             }
         }
+    }
+
+    private fun handleScheduledPush(context: Context) {
+        val icsContent = loadSavedIcs(context) ?: return
+        val now = LocalTime.now()
+        val today = LocalDate.now()
+        val tomorrow = today.plusDays(1)
+
+        val todayCourses = IcsParser.parse(icsContent, today)
+        val tomorrowCourses = IcsParser.parse(icsContent, tomorrow)
+
+        val nextCourse = todayCourses.firstOrNull { it.startTime > now }
+            ?: tomorrowCourses.firstOrNull()
+
+        if (nextCourse != null) {
+            NotificationHelper.postCourseNotification(
+                context,
+                nextCourse,
+                "scheduled_push_${System.currentTimeMillis()}".hashCode(),
+            )
+        }
+
+        // Reschedule push alarms for next cycle
+        AlarmScheduler.scheduleAllPushAlarms(context)
     }
 
     private fun loadSavedIcs(context: Context): String? {

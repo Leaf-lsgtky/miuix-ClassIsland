@@ -6,14 +6,22 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import moe.lsgtky.leafisland.data.IcsParser
+import moe.lsgtky.leafisland.data.ScheduledPush
 import moe.lsgtky.leafisland.util.SettingsStore
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.ZoneId
 
 object AlarmScheduler {
 
+    const val ACTION_SCHEDULED_PUSH = "moe.lsgtky.leafisland.ACTION_SCHEDULED_PUSH"
+
+    // --- Course alarms ---
+
     fun scheduleForCourses(context: Context, icsContent: String) {
+        cancelAllTrackedAlarms(context)
+
         val today = LocalDate.now()
         val tomorrow = today.plusDays(1)
         val advanceMinutes = SettingsStore.getAdvanceMinutes(context).toLong()
@@ -21,6 +29,8 @@ object AlarmScheduler {
 
         val courses = IcsParser.parseWithDates(icsContent, today) +
                 IcsParser.parseWithDates(icsContent, tomorrow)
+
+        val newCodes = mutableSetOf<Int>()
 
         for (scheduled in courses) {
             val alarmDateTime = LocalDateTime.of(scheduled.date, scheduled.event.startTime)
@@ -34,6 +44,7 @@ object AlarmScheduler {
             if (alarmEpochMillis <= System.currentTimeMillis()) continue
 
             val requestCode = generateRequestCode(scheduled.date, scheduled.event.startTime.toString(), scheduled.event.summary)
+            newCodes.add(requestCode)
 
             val intent = Intent(context, AlarmReceiver::class.java).apply {
                 putExtra(AlarmReceiver.EXTRA_SUMMARY, scheduled.event.summary)
@@ -75,28 +86,101 @@ object AlarmScheduler {
                 scheduleExact(alarmManager, dismissTime, dismissPending)
             }
         }
+
+        SettingsStore.setScheduledRequestCodes(context, newCodes)
     }
 
-    fun cancelForCourses(context: Context, icsContent: String) {
-        val today = LocalDate.now()
-        val tomorrow = today.plusDays(1)
+    private fun cancelAllTrackedAlarms(context: Context) {
         val alarmManager = context.getSystemService(AlarmManager::class.java)
-
-        val courses = IcsParser.parseWithDates(icsContent, today) +
-                IcsParser.parseWithDates(icsContent, tomorrow)
-
-        for (scheduled in courses) {
-            val requestCode = generateRequestCode(scheduled.date, scheduled.event.startTime.toString(), scheduled.event.summary)
+        val savedCodes = SettingsStore.getScheduledRequestCodes(context)
+        for (code in savedCodes) {
             val intent = Intent(context, AlarmReceiver::class.java)
-            val pendingIntent = PendingIntent.getBroadcast(
-                context,
-                requestCode,
-                intent,
+            val mainPending = PendingIntent.getBroadcast(
+                context, code, intent,
                 PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE,
             )
-            pendingIntent?.let { alarmManager.cancel(it) }
+            mainPending?.let { alarmManager.cancel(it) }
+
+            val dismissIntent = Intent(context, AlarmReceiver::class.java).apply {
+                action = AlarmReceiver.ACTION_DISMISS
+            }
+            val dismissPending = PendingIntent.getBroadcast(
+                context, code + 1, dismissIntent,
+                PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE,
+            )
+            dismissPending?.let { alarmManager.cancel(it) }
+        }
+        SettingsStore.clearScheduledRequestCodes(context)
+    }
+
+    // --- Scheduled push alarms ---
+
+    fun scheduleAllPushAlarms(context: Context) {
+        val pushes = SettingsStore.getScheduledPushes(context)
+        val alarmManager = context.getSystemService(AlarmManager::class.java)
+        val now = LocalDateTime.now()
+        val today = now.toLocalDate()
+        val tomorrow = today.plusDays(1)
+
+        for (push in pushes) {
+            val todayAlarmTime = LocalDateTime.of(today, LocalTime.of(push.hour, push.minute))
+            if (todayAlarmTime.isAfter(now)) {
+                scheduleSinglePush(context, alarmManager, push, todayAlarmTime)
+            }
+            val tomorrowAlarmTime = LocalDateTime.of(tomorrow, LocalTime.of(push.hour, push.minute))
+            scheduleSinglePush(context, alarmManager, push, tomorrowAlarmTime)
         }
     }
+
+    fun cancelAllPushAlarms(context: Context) {
+        val pushes = SettingsStore.getScheduledPushes(context)
+        val alarmManager = context.getSystemService(AlarmManager::class.java)
+        val today = LocalDate.now()
+        val tomorrow = today.plusDays(1)
+
+        for (push in pushes) {
+            for (date in listOf(today, tomorrow)) {
+                val requestCode = generatePushRequestCode(push.id, date)
+                val intent = Intent(context, AlarmReceiver::class.java).apply {
+                    action = ACTION_SCHEDULED_PUSH
+                }
+                val pendingIntent = PendingIntent.getBroadcast(
+                    context, requestCode, intent,
+                    PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE,
+                )
+                pendingIntent?.let { alarmManager.cancel(it) }
+            }
+        }
+    }
+
+    private fun scheduleSinglePush(
+        context: Context,
+        alarmManager: AlarmManager,
+        push: ScheduledPush,
+        alarmDateTime: LocalDateTime,
+    ) {
+        val epochMillis = alarmDateTime
+            .atZone(ZoneId.systemDefault())
+            .toInstant()
+            .toEpochMilli()
+
+        val requestCode = generatePushRequestCode(push.id, alarmDateTime.toLocalDate())
+
+        val intent = Intent(context, AlarmReceiver::class.java).apply {
+            action = ACTION_SCHEDULED_PUSH
+        }
+        val pendingIntent = PendingIntent.getBroadcast(
+            context, requestCode, intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        scheduleExact(alarmManager, epochMillis, pendingIntent)
+    }
+
+    private fun generatePushRequestCode(pushId: Long, date: LocalDate): Int {
+        return "push_${pushId}_$date".hashCode()
+    }
+
+    // --- Common ---
 
     private fun generateRequestCode(date: LocalDate, time: String, summary: String): Int {
         return ("$date$time$summary").hashCode()

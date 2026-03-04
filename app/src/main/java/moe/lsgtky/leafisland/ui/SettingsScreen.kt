@@ -11,6 +11,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.TimeInput
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -18,12 +21,14 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import moe.lsgtky.leafisland.data.IcsParser
+import moe.lsgtky.leafisland.data.ScheduledPush
 import moe.lsgtky.leafisland.notification.AlarmScheduler
 import moe.lsgtky.leafisland.notification.NotificationHelper
 import moe.lsgtky.leafisland.util.SettingsStore
@@ -49,6 +54,7 @@ import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import java.io.File
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
@@ -56,13 +62,26 @@ fun SettingsScreen(
     val context = LocalContext.current
     val scrollBehavior = MiuixScrollBehavior(rememberTopAppBarState())
 
+    // --- Advance minutes state ---
     var advanceMinutes by remember {
         mutableIntStateOf(SettingsStore.getAdvanceMinutes(context))
     }
     var sliderValue by remember { mutableFloatStateOf(advanceMinutes.toFloat()) }
-
-    val showDialog = remember { mutableStateOf(false) }
+    val showMinutesDialog = remember { mutableStateOf(false) }
     var textValue by remember { mutableStateOf(advanceMinutes.toString()) }
+
+    // --- Scheduled push state ---
+    var scheduledPushes by remember {
+        mutableStateOf(SettingsStore.getScheduledPushes(context))
+    }
+    val showTimePickerDialog = remember { mutableStateOf(false) }
+    val showDeleteDialog = remember { mutableStateOf(false) }
+    var deleteTargetPush by remember { mutableStateOf<ScheduledPush?>(null) }
+    val timePickerState = rememberTimePickerState(
+        initialHour = 22,
+        initialMinute = 0,
+        is24Hour = true,
+    )
 
     Scaffold(
         topBar = {
@@ -90,6 +109,7 @@ fun SettingsScreen(
                 .overScrollVertical()
                 .nestedScroll(scrollBehavior.nestedScrollConnection),
         ) {
+            // --- 通知 section ---
             item {
                 SmallTitle(text = "通知")
             }
@@ -106,7 +126,7 @@ fun SettingsScreen(
                         summary = "${advanceMinutes} 分钟",
                         onClick = {
                             textValue = advanceMinutes.toString()
-                            showDialog.value = true
+                            showMinutesDialog.value = true
                         },
                     )
                     Slider(
@@ -121,7 +141,6 @@ fun SettingsScreen(
                             val icsFile = File(context.filesDir, "schedule.ics")
                             if (icsFile.exists()) {
                                 val icsContent = icsFile.readText()
-                                AlarmScheduler.cancelForCourses(context, icsContent)
                                 AlarmScheduler.scheduleForCourses(context, icsContent)
                             }
                         },
@@ -164,12 +183,45 @@ fun SettingsScreen(
                     )
                 }
             }
+
+            // --- 定时推送 section ---
+            item {
+                SmallTitle(text = "定时推送")
+            }
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp)
+                        .padding(bottom = 6.dp),
+                    insideMargin = PaddingValues(0.dp),
+                ) {
+                    for (push in scheduledPushes) {
+                        SuperArrow(
+                            title = String.format("%02d:%02d", push.hour, push.minute),
+                            summary = "推送下一节课程提醒",
+                            onClick = {
+                                deleteTargetPush = push
+                                showDeleteDialog.value = true
+                            },
+                        )
+                    }
+                    SuperArrow(
+                        title = "添加定时推送",
+                        summary = "在指定时间推送下一节课程通知",
+                        onClick = {
+                            showTimePickerDialog.value = true
+                        },
+                    )
+                }
+            }
         }
 
+        // --- Minutes input dialog ---
         SuperDialog(
-            show = showDialog,
+            show = showMinutesDialog,
             title = "提前提醒时间",
-            onDismissRequest = { showDialog.value = false },
+            onDismissRequest = { showMinutesDialog.value = false },
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 TextField(
@@ -185,7 +237,7 @@ fun SettingsScreen(
                 Row(modifier = Modifier.fillMaxWidth()) {
                     TextButton(
                         text = "取消",
-                        onClick = { showDialog.value = false },
+                        onClick = { showMinutesDialog.value = false },
                         modifier = Modifier.weight(1f),
                     )
                     Spacer(modifier = Modifier.width(8.dp))
@@ -196,13 +248,90 @@ fun SettingsScreen(
                             SettingsStore.setAdvanceMinutes(context, finalValue)
                             advanceMinutes = finalValue
                             sliderValue = finalValue.toFloat()
-                            showDialog.value = false
+                            showMinutesDialog.value = false
                             val icsFile = File(context.filesDir, "schedule.ics")
                             if (icsFile.exists()) {
                                 val icsContent = icsFile.readText()
-                                AlarmScheduler.cancelForCourses(context, icsContent)
                                 AlarmScheduler.scheduleForCourses(context, icsContent)
                             }
+                        },
+                        colors = ButtonDefaults.textButtonColorsPrimary(),
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+        }
+
+        // --- Time picker dialog ---
+        SuperDialog(
+            show = showTimePickerDialog,
+            title = "选择推送时间",
+            onDismissRequest = { showTimePickerDialog.value = false },
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                TimeInput(state = timePickerState)
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    TextButton(
+                        text = "取消",
+                        onClick = { showTimePickerDialog.value = false },
+                        modifier = Modifier.weight(1f),
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    TextButton(
+                        text = "确定",
+                        onClick = {
+                            val newPush = ScheduledPush(
+                                id = System.currentTimeMillis(),
+                                hour = timePickerState.hour,
+                                minute = timePickerState.minute,
+                            )
+                            val updated = scheduledPushes + newPush
+                            SettingsStore.setScheduledPushes(context, updated)
+                            scheduledPushes = updated
+                            AlarmScheduler.cancelAllPushAlarms(context)
+                            AlarmScheduler.scheduleAllPushAlarms(context)
+                            showTimePickerDialog.value = false
+                        },
+                        colors = ButtonDefaults.textButtonColorsPrimary(),
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+        }
+
+        // --- Delete confirmation dialog ---
+        SuperDialog(
+            show = showDeleteDialog,
+            title = "删除定时推送",
+            onDismissRequest = { showDeleteDialog.value = false },
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "确定删除 ${deleteTargetPush?.let { String.format("%02d:%02d", it.hour, it.minute) } ?: ""} 的定时推送？",
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    TextButton(
+                        text = "取消",
+                        onClick = { showDeleteDialog.value = false },
+                        modifier = Modifier.weight(1f),
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    TextButton(
+                        text = "删除",
+                        onClick = {
+                            deleteTargetPush?.let { target ->
+                                AlarmScheduler.cancelAllPushAlarms(context)
+                                val updated = scheduledPushes.filter { it.id != target.id }
+                                SettingsStore.setScheduledPushes(context, updated)
+                                scheduledPushes = updated
+                                AlarmScheduler.scheduleAllPushAlarms(context)
+                            }
+                            showDeleteDialog.value = false
                         },
                         colors = ButtonDefaults.textButtonColorsPrimary(),
                         modifier = Modifier.weight(1f),

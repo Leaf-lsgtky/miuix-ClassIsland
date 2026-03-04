@@ -131,6 +131,7 @@ class MainActivity : ComponentActivity() {
             getSystemService(AlarmManager::class.java).canScheduleExactAlarms()
         ) {
             AlarmScheduler.scheduleForCourses(this, content)
+            AlarmScheduler.scheduleAllPushAlarms(this)
         }
     }
 
@@ -161,6 +162,7 @@ class MainActivity : ComponentActivity() {
         }
 
         AlarmScheduler.scheduleForCourses(this, content)
+        AlarmScheduler.scheduleAllPushAlarms(this)
     }
 
     private fun openFilePicker() {
