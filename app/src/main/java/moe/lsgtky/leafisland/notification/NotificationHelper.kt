@@ -19,6 +19,7 @@ import java.time.format.DateTimeFormatter
 object NotificationHelper {
 
     const val CHANNEL_ID = "course_reminders"
+    const val NOTIFICATION_ID = 1001
     private const val CHANNEL_NAME = "课程提醒"
     private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 
@@ -36,13 +37,13 @@ object NotificationHelper {
         manager.createNotificationChannel(channel)
     }
 
-    fun postCourseNotification(context: Context, course: CourseEvent, notificationId: Int) {
+    fun postCourseNotification(context: Context, course: CourseEvent) {
         val tapIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
         val pendingIntent = PendingIntent.getActivity(
             context,
-            notificationId,
+            NOTIFICATION_ID,
             tapIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
@@ -63,7 +64,7 @@ object NotificationHelper {
             }
 
         val manager = context.getSystemService(NotificationManager::class.java)
-        manager.notify(notificationId, notification)
+        manager.notify(NOTIFICATION_ID, notification)
     }
 
     fun cancelAllNotifications(context: Context) {

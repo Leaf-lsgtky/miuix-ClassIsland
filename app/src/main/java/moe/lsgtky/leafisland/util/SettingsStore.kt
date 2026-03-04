@@ -61,6 +61,7 @@ object SettingsStore {
                     id = obj.getLong("id"),
                     hour = obj.getInt("hour"),
                     minute = obj.getInt("minute"),
+                    dismissMinutes = obj.optInt("dismissMinutes", 30),
                 )
             }
         } catch (_: Exception) {
@@ -75,6 +76,7 @@ object SettingsStore {
                 put("id", push.id)
                 put("hour", push.hour)
                 put("minute", push.minute)
+                put("dismissMinutes", push.dismissMinutes)
             })
         }
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)

@@ -75,7 +75,6 @@ object AlarmScheduler {
             if (dismissTime > System.currentTimeMillis()) {
                 val dismissIntent = Intent(context, AlarmReceiver::class.java).apply {
                     action = AlarmReceiver.ACTION_DISMISS
-                    putExtra(AlarmReceiver.EXTRA_NOTIFICATION_ID, requestCode)
                 }
                 val dismissPending = PendingIntent.getBroadcast(
                     context,
@@ -168,12 +167,28 @@ object AlarmScheduler {
 
         val intent = Intent(context, AlarmReceiver::class.java).apply {
             action = ACTION_SCHEDULED_PUSH
+            putExtra(AlarmReceiver.EXTRA_DISMISS_MINUTES, push.dismissMinutes)
         }
         val pendingIntent = PendingIntent.getBroadcast(
             context, requestCode, intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         scheduleExact(alarmManager, epochMillis, pendingIntent)
+    }
+
+    fun scheduleDismiss(context: Context, delayMinutes: Long) {
+        val alarmManager = context.getSystemService(AlarmManager::class.java)
+        val dismissTime = System.currentTimeMillis() + delayMinutes * 60_000
+        val dismissIntent = Intent(context, AlarmReceiver::class.java).apply {
+            action = AlarmReceiver.ACTION_DISMISS
+        }
+        val dismissPending = PendingIntent.getBroadcast(
+            context,
+            NotificationHelper.NOTIFICATION_ID + 1,
+            dismissIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        scheduleExact(alarmManager, dismissTime, dismissPending)
     }
 
     private fun generatePushRequestCode(pushId: Long, date: LocalDate): Int {

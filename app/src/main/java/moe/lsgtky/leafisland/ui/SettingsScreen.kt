@@ -82,6 +82,7 @@ fun SettingsScreen(
         initialMinute = 0,
         is24Hour = true,
     )
+    var dismissSliderValue by remember { mutableFloatStateOf(30f) }
 
     Scaffold(
         topBar = {
@@ -166,11 +167,7 @@ fun SettingsScreen(
                                 ?: tomorrowCourses.firstOrNull()
                                 ?: todayCourses.firstOrNull()
                             if (nearest != null) {
-                                NotificationHelper.postCourseNotification(
-                                    context,
-                                    nearest,
-                                    "test_notification".hashCode(),
-                                )
+                                NotificationHelper.postCourseNotification(context, nearest)
                             }
                         },
                     )
@@ -199,7 +196,7 @@ fun SettingsScreen(
                     for (push in scheduledPushes) {
                         SuperArrow(
                             title = String.format("%02d:%02d", push.hour, push.minute),
-                            summary = "推送下一节课程提醒",
+                            summary = "推送下一节课程提醒 · ${push.dismissMinutes}分钟后消失",
                             onClick = {
                                 deleteTargetPush = push
                                 showDeleteDialog.value = true
@@ -210,6 +207,7 @@ fun SettingsScreen(
                         title = "添加定时推送",
                         summary = "在指定时间推送下一节课程通知",
                         onClick = {
+                            dismissSliderValue = 30f
                             showTimePickerDialog.value = true
                         },
                     )
@@ -274,6 +272,16 @@ fun SettingsScreen(
             ) {
                 TimeInput(state = timePickerState)
                 Spacer(modifier = Modifier.height(16.dp))
+                Text(text = "通知消失时间：${dismissSliderValue.toInt()} 分钟")
+                Slider(
+                    value = dismissSliderValue,
+                    onValueChange = { dismissSliderValue = it },
+                    valueRange = 5f..120f,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp),
+                )
+                Spacer(modifier = Modifier.height(16.dp))
                 Row(modifier = Modifier.fillMaxWidth()) {
                     TextButton(
                         text = "取消",
@@ -288,6 +296,7 @@ fun SettingsScreen(
                                 id = System.currentTimeMillis(),
                                 hour = timePickerState.hour,
                                 minute = timePickerState.minute,
+                                dismissMinutes = dismissSliderValue.toInt(),
                             )
                             val updated = scheduledPushes + newPush
                             SettingsStore.setScheduledPushes(context, updated)

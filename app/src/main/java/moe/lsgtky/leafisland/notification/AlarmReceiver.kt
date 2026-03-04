@@ -20,6 +20,7 @@ class AlarmReceiver : BroadcastReceiver() {
         const val EXTRA_END_TIME = "extra_end_time"
         const val EXTRA_NOTIFICATION_ID = "extra_notification_id"
         const val ACTION_DISMISS = "moe.lsgtky.leafisland.ACTION_DISMISS_NOTIFICATION"
+        const val EXTRA_DISMISS_MINUTES = "extra_dismiss_minutes"
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -31,14 +32,11 @@ class AlarmReceiver : BroadcastReceiver() {
                 AlarmScheduler.scheduleAllPushAlarms(context)
             }
             ACTION_DISMISS -> {
-                val notifId = intent.getIntExtra(EXTRA_NOTIFICATION_ID, 0)
-                if (notifId != 0) {
-                    val manager = context.getSystemService(android.app.NotificationManager::class.java)
-                    manager.cancel(notifId)
-                }
+                val manager = context.getSystemService(android.app.NotificationManager::class.java)
+                manager.cancel(NotificationHelper.NOTIFICATION_ID)
             }
             AlarmScheduler.ACTION_SCHEDULED_PUSH -> {
-                handleScheduledPush(context)
+                handleScheduledPush(context, intent)
             }
             else -> {
                 val summary = intent.getStringExtra(EXTRA_SUMMARY) ?: return
@@ -47,7 +45,6 @@ class AlarmReceiver : BroadcastReceiver() {
                 val section = intent.getStringExtra(EXTRA_SECTION) ?: ""
                 val startTime = LocalTime.parse(intent.getStringExtra(EXTRA_START_TIME) ?: return)
                 val endTime = LocalTime.parse(intent.getStringExtra(EXTRA_END_TIME) ?: return)
-                val notifId = intent.getIntExtra(EXTRA_NOTIFICATION_ID, summary.hashCode())
 
                 val course = CourseEvent(
                     summary = summary,
@@ -57,12 +54,12 @@ class AlarmReceiver : BroadcastReceiver() {
                     teacher = teacher,
                     section = section,
                 )
-                NotificationHelper.postCourseNotification(context, course, notifId)
+                NotificationHelper.postCourseNotification(context, course)
             }
         }
     }
 
-    private fun handleScheduledPush(context: Context) {
+    private fun handleScheduledPush(context: Context, intent: Intent) {
         val icsContent = loadSavedIcs(context) ?: return
         val now = LocalTime.now()
         val today = LocalDate.now()
@@ -75,11 +72,11 @@ class AlarmReceiver : BroadcastReceiver() {
             ?: tomorrowCourses.firstOrNull()
 
         if (nextCourse != null) {
-            NotificationHelper.postCourseNotification(
-                context,
-                nextCourse,
-                "scheduled_push_${System.currentTimeMillis()}".hashCode(),
-            )
+            NotificationHelper.postCourseNotification(context, nextCourse)
+
+            // Schedule auto-dismiss
+            val dismissMinutes = intent.getIntExtra(EXTRA_DISMISS_MINUTES, 30)
+            AlarmScheduler.scheduleDismiss(context, dismissMinutes.toLong())
         }
 
         // Reschedule push alarms for next cycle
