@@ -122,27 +122,32 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
         // 1. Currently in class?
         val current = todayCourses.firstOrNull { now >= it.startTime && now <= it.endTime }
         if (current != null) {
+            // Check if next class is within advance time — if so, switch to showing next class
+            val next = todayCourses.firstOrNull { it.startTime > now }
+            if (next != null) {
+                val minutesUntil = Duration.between(now, next.startTime).toMinutes()
+                if (minutesUntil <= advanceMin) {
+                    return "$dateStr · ${truncate(next.summary, courseChars)} · ${next.startTime.format(HH_MM)}"
+                }
+            }
             return "$dateStr · ${truncate(current.summary, courseChars)}"
         }
 
-        // 2. Next class within advance time?
+        // 2. Today has upcoming class?
         val next = todayCourses.firstOrNull { it.startTime > now }
         if (next != null) {
-            val minutesUntil = Duration.between(now, next.startTime).toMinutes()
-            if (minutesUntil <= advanceMin) {
-                return "$dateStr · ${truncate(next.summary, courseChars)} · ${next.startTime.format(HH_MM)}"
-            }
+            return "$dateStr · ${truncate(next.summary, courseChars)} · ${next.startTime.format(HH_MM)}"
         }
 
-        // 3. Check tomorrow
+        // 3. Tomorrow has class?
         val tomorrow = today.plusDays(1)
         val tomorrowCourses = IcsParser.parse(icsContent, tomorrow)
-
-        if (todayCourses.isEmpty() && tomorrowCourses.isEmpty()) {
-            return "$dateStr · ${getLunarStr(today)}"
+        val tomorrowFirst = tomorrowCourses.firstOrNull()
+        if (tomorrowFirst != null) {
+            return "$dateStr · ${truncate(tomorrowFirst.summary, courseChars)} · 明天${tomorrowFirst.startTime.format(HH_MM)}"
         }
 
-        // Has courses but none imminent — show lunar
+        // 4. No courses — show lunar
         return "$dateStr · ${getLunarStr(today)}"
     }
 
@@ -158,9 +163,11 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
         return try {
             val solarDay = SolarDay.fromYmd(date.year, date.monthValue, date.dayOfMonth)
             val lunarDay = solarDay.getLunarDay()
-            "农历${lunarDay.getLunarMonth().getName()}${lunarDay.getName()}"
+            val lunarMonth = lunarDay.getLunarMonth()
+            val yearName = lunarMonth.getLunarYear().getSixtyCycle().getName()
+            "${yearName}年${lunarMonth.getName()}${lunarDay.getName()}"
         } catch (_: Exception) {
-            "农历"
+            ""
         }
     }
 
