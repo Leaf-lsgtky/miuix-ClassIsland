@@ -173,7 +173,7 @@ object SettingsStore {
 
     fun setWidgetInfoSpacing(context: Context, dp: Int) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .edit().putInt(KEY_WIDGET_INFO_SPACING, dp.coerceIn(0, 30)).apply()
+            .edit().putInt(KEY_WIDGET_INFO_SPACING, dp.coerceIn(-10, 30)).apply()
     }
 
     fun getWidgetTopPadding(context: Context): Int {
@@ -183,6 +183,6 @@ object SettingsStore {
 
     fun setWidgetTopPadding(context: Context, dp: Int) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .edit().putInt(KEY_WIDGET_TOP_PADDING, dp.coerceIn(0, 50)).apply()
+            .edit().putInt(KEY_WIDGET_TOP_PADDING, dp.coerceIn(-10, 50)).apply()
     }
 }

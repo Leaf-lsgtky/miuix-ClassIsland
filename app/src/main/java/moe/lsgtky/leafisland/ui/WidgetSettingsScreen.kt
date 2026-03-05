@@ -38,6 +38,7 @@ import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.basic.rememberTopAppBarState
 import top.yukonga.miuix.kmp.extra.SuperArrow
 import top.yukonga.miuix.kmp.extra.SuperDialog
+import top.yukonga.miuix.kmp.extra.SuperDropdown
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.utils.overScrollVertical
@@ -62,12 +63,9 @@ fun WidgetSettingsScreen(
 
     // --- Dialog visibility ---
     val showTimeSizeDialog = remember { mutableStateOf(false) }
-    val showTimeWeightDialog = remember { mutableStateOf(false) }
     val showColorDialog = remember { mutableStateOf(false) }
     val showCharsDialog = remember { mutableStateOf(false) }
     val showAdvanceDialog = remember { mutableStateOf(false) }
-    val showInfoWeightDialog = remember { mutableStateOf(false) }
-    val showPositionDialog = remember { mutableStateOf(false) }
     val showSpacingDialog = remember { mutableStateOf(false) }
     val showTopPaddingDialog = remember { mutableStateOf(false) }
 
@@ -78,6 +76,13 @@ fun WidgetSettingsScreen(
     var spacingSlider by remember { mutableFloatStateOf(infoSpacing.toFloat()) }
     var topPaddingSlider by remember { mutableFloatStateOf(topPadding.toFloat()) }
     var colorInput by remember { mutableStateOf(textColor) }
+
+    // --- Dropdown data ---
+    val weightOptions = listOf("Regular (400)", "Medium (500)", "SemiBold (600)", "Bold (700)", "ExtraBold (800)", "Black (900)")
+    val weightValues = listOf(400, 500, 600, 700, 800, 900)
+    val positionOptions = listOf("时间上方", "时间下方")
+
+    fun weightToIndex(w: Int) = weightValues.indexOf(w).coerceAtLeast(0)
 
     fun refresh() = ScheduleWidgetProvider.triggerUpdate(context)
 
@@ -122,10 +127,16 @@ fun WidgetSettingsScreen(
                             showTimeSizeDialog.value = true
                         },
                     )
-                    SuperArrow(
+                    SuperDropdown(
                         title = "时间粗细",
-                        summary = weightLabel(timeWeight),
-                        onClick = { showTimeWeightDialog.value = true },
+                        items = weightOptions,
+                        selectedIndex = weightToIndex(timeWeight),
+                        onSelectedIndexChange = { index ->
+                            val w = weightValues[index]
+                            SettingsStore.setWidgetTimeWeight(context, w)
+                            timeWeight = w
+                            refresh()
+                        },
                     )
                     SuperArrow(
                         title = "时钟上间距",
@@ -145,15 +156,27 @@ fun WidgetSettingsScreen(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp).padding(bottom = 6.dp),
                     insideMargin = PaddingValues(0.dp),
                 ) {
-                    SuperArrow(
+                    SuperDropdown(
                         title = "副文本粗细",
-                        summary = weightLabel(infoWeight),
-                        onClick = { showInfoWeightDialog.value = true },
+                        items = weightOptions,
+                        selectedIndex = weightToIndex(infoWeight),
+                        onSelectedIndexChange = { index ->
+                            val w = weightValues[index]
+                            SettingsStore.setWidgetInfoWeight(context, w)
+                            infoWeight = w
+                            refresh()
+                        },
                     )
-                    SuperArrow(
+                    SuperDropdown(
                         title = "副文本位置",
-                        summary = if (infoAbove) "时间上方" else "时间下方",
-                        onClick = { showPositionDialog.value = true },
+                        items = positionOptions,
+                        selectedIndex = if (infoAbove) 0 else 1,
+                        onSelectedIndexChange = { index ->
+                            val above = index == 0
+                            SettingsStore.setWidgetInfoAbove(context, above)
+                            infoAbove = above
+                            refresh()
+                        },
                     )
                     SuperArrow(
                         title = "副文本与时钟间距",
@@ -219,25 +242,13 @@ fun WidgetSettingsScreen(
             },
         )
 
-        // Time weight
-        WeightPickerDialog(
-            show = showTimeWeightDialog,
-            title = "时间粗细",
-            selected = timeWeight,
-            onSelect = { w ->
-                SettingsStore.setWidgetTimeWeight(context, w)
-                timeWeight = w
-                refresh()
-            },
-        )
-
         // Top padding
         SliderDialog(
             show = showTopPaddingDialog,
             title = "时钟上间距",
             value = topPaddingSlider,
             onValueChange = { topPaddingSlider = it },
-            valueRange = 0f..50f,
+            valueRange = -10f..50f,
             valueLabel = { "${it.toInt()}dp" },
             onConfirm = {
                 val v = topPaddingSlider.toInt()
@@ -247,59 +258,13 @@ fun WidgetSettingsScreen(
             },
         )
 
-        // Info weight
-        WeightPickerDialog(
-            show = showInfoWeightDialog,
-            title = "副文本粗细",
-            selected = infoWeight,
-            onSelect = { w ->
-                SettingsStore.setWidgetInfoWeight(context, w)
-                infoWeight = w
-                refresh()
-            },
-        )
-
-        // Position
-        SuperDialog(
-            show = showPositionDialog,
-            title = "副文本位置",
-            onDismissRequest = { showPositionDialog.value = false },
-        ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                TextButton(
-                    text = "时间上方",
-                    onClick = {
-                        SettingsStore.setWidgetInfoAbove(context, true)
-                        infoAbove = true
-                        showPositionDialog.value = false
-                        refresh()
-                    },
-                    colors = if (infoAbove) ButtonDefaults.textButtonColorsPrimary()
-                    else ButtonDefaults.textButtonColors(),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                TextButton(
-                    text = "时间下方",
-                    onClick = {
-                        SettingsStore.setWidgetInfoAbove(context, false)
-                        infoAbove = false
-                        showPositionDialog.value = false
-                        refresh()
-                    },
-                    colors = if (!infoAbove) ButtonDefaults.textButtonColorsPrimary()
-                    else ButtonDefaults.textButtonColors(),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        }
-
         // Spacing
         SliderDialog(
             show = showSpacingDialog,
             title = "副文本与时钟间距",
             value = spacingSlider,
             onValueChange = { spacingSlider = it },
-            valueRange = 0f..30f,
+            valueRange = -10f..30f,
             valueLabel = { "${it.toInt()}dp" },
             onConfirm = {
                 val v = spacingSlider.toInt()
@@ -422,47 +387,5 @@ private fun SliderDialog(
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun WeightPickerDialog(
-    show: androidx.compose.runtime.MutableState<Boolean>,
-    title: String,
-    selected: Int,
-    onSelect: (Int) -> Unit,
-) {
-    SuperDialog(
-        show = show,
-        title = title,
-        onDismissRequest = { show.value = false },
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            val weights = listOf(400, 500, 600, 700, 800, 900)
-            for (w in weights) {
-                TextButton(
-                    text = weightLabel(w),
-                    onClick = {
-                        onSelect(w)
-                        show.value = false
-                    },
-                    colors = if (w == selected) ButtonDefaults.textButtonColorsPrimary()
-                    else ButtonDefaults.textButtonColors(),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        }
-    }
-}
-
-private fun weightLabel(weight: Int): String {
-    return when (weight) {
-        400 -> "Regular (400)"
-        500 -> "Medium (500)"
-        600 -> "SemiBold (600)"
-        700 -> "Bold (700)"
-        800 -> "ExtraBold (800)"
-        900 -> "Black (900)"
-        else -> "$weight"
     }
 }
