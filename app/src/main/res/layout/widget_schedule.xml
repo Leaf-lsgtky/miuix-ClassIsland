@@ -1,41 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:clipChildren="false"
-    android:clipToPadding="false"
-    android:gravity="center"
-    android:orientation="vertical"
-    android:padding="8dp">
+    android:layout_height="match_parent">
 
-    <TextView
-        android:id="@+id/widget_info_top"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:fontFamily="@font/misans_regular"
-        android:text=""
-        android:textSize="14sp"
-        android:textColor="#FFFFFFFF"
-        android:visibility="gone" />
+    <ImageView
+        android:id="@+id/widget_canvas"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="fitCenter" />
 
-    <TextClock
-        android:id="@+id/widget_time"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:fontFamily="@font/misans_bold"
-        android:format24Hour="HH:mm"
-        android:format12Hour="HH:mm"
-        android:textSize="56sp"
-        android:textColor="#FFFFFFFF"
-        android:letterSpacing="0.02" />
-
-    <TextView
-        android:id="@+id/widget_info_bottom"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:fontFamily="@font/misans_regular"
-        android:text="加载中…"
-        android:textSize="14sp"
-        android:textColor="#FFFFFFFF" />
-
-</LinearLayout>
+</FrameLayout>

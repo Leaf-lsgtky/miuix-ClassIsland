@@ -7,12 +7,16 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.Typeface
 import android.os.Build
+import android.os.Bundle
 import android.os.SystemClock
 import android.util.Log
 import android.util.TypedValue
-import android.view.View
 import android.widget.RemoteViews
 import com.tyme.solar.SolarDay
 import moe.lsgtky.leafisland.R
@@ -41,15 +45,6 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
             intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
             context.sendBroadcast(intent)
         }
-
-        private fun fontStyleForWeight(weight: Int): Int = when (weight) {
-            400 -> R.style.WidgetFont400
-            500 -> R.style.WidgetFont500
-            600 -> R.style.WidgetFont600
-            800 -> R.style.WidgetFont800
-            900 -> R.style.WidgetFont900
-            else -> R.style.WidgetFont700
-        }
     }
 
     override fun onUpdate(
@@ -58,17 +53,18 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
         appWidgetIds: IntArray,
     ) {
         for (id in appWidgetIds) {
-            try {
-                val views = buildRemoteViews(context)
-                appWidgetManager.updateAppWidget(id, views)
-            } catch (e: Exception) {
-                Log.e(TAG, "Widget update failed", e)
-                writeErrorLog(context, e)
-                val views = RemoteViews(context.packageName, R.layout.widget_schedule)
-                views.setTextViewText(R.id.widget_info_bottom, "小部件加载失败: ${e.message}")
-                appWidgetManager.updateAppWidget(id, views)
-            }
+            updateWidget(context, appWidgetManager, id)
         }
+    }
+
+    override fun onAppWidgetOptionsChanged(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetId: Int,
+        newOptions: Bundle,
+    ) {
+        super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
+        updateWidget(context, appWidgetManager, appWidgetId)
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -76,7 +72,9 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
         if (intent.action == ACTION_WIDGET_UPDATE) {
             val mgr = AppWidgetManager.getInstance(context)
             val ids = mgr.getAppWidgetIds(ComponentName(context, ScheduleWidgetProvider::class.java))
-            onUpdate(context, mgr, ids)
+            for (id in ids) {
+                updateWidget(context, mgr, id)
+            }
         }
     }
 
@@ -90,39 +88,72 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
         cancelMinuteAlarm(context)
     }
 
-    private fun buildRemoteViews(context: Context): RemoteViews {
-        val views = RemoteViews(context.packageName, R.layout.widget_schedule)
+    private fun updateWidget(context: Context, appWidgetManager: AppWidgetManager, id: Int) {
+        try {
+            val options = appWidgetManager.getAppWidgetOptions(id)
+            val views = buildRemoteViews(context, options)
+            appWidgetManager.updateAppWidget(id, views)
+        } catch (e: Exception) {
+            Log.e(TAG, "Widget update failed", e)
+            writeErrorLog(context, e)
+            try {
+                val views = RemoteViews(context.packageName, R.layout.widget_schedule)
+                val dm = context.resources.displayMetrics
+                val bmp = Bitmap.createBitmap(400, 100, Bitmap.Config.ARGB_8888)
+                val c = Canvas(bmp)
+                val p = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color = Color.WHITE
+                    textSize = 14f * dm.density
+                    textAlign = Paint.Align.CENTER
+                }
+                c.drawText("小部件加载失败: ${e.message}", 200f, 50f, p)
+                views.setImageViewBitmap(R.id.widget_canvas, bmp)
+                appWidgetManager.updateAppWidget(id, views)
+            } catch (_: Exception) { }
+        }
+    }
 
+    private fun buildRemoteViews(context: Context, options: Bundle): RemoteViews {
+        val views = RemoteViews(context.packageName, R.layout.widget_schedule)
+        val dm = context.resources.displayMetrics
+        val density = dm.density
+
+        // Widget size in dp → px
+        val widthDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH, 300)
+        val heightDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 120)
+        val widthPx = (widthDp * density).toInt().coerceAtLeast(200)
+        val heightPx = (heightDp * density).toInt().coerceAtLeast(80)
+
+        // Settings
         val timeSize = SettingsStore.getWidgetTimeSize(context)
         val timeWeight = SettingsStore.getWidgetTimeWeight(context)
         val infoWeight = SettingsStore.getWidgetInfoWeight(context)
         val textColorStr = SettingsStore.getWidgetTextColor(context)
-        val textColor = try {
-            Color.parseColor(textColorStr)
-        } catch (_: Exception) {
-            Color.WHITE
-        }
+        val textColor = try { Color.parseColor(textColorStr) } catch (_: Exception) { Color.WHITE }
         val infoAbove = SettingsStore.getWidgetInfoAbove(context)
         val infoSpacing = SettingsStore.getWidgetInfoSpacing(context)
         val topPadding = SettingsStore.getWidgetTopPadding(context)
 
-        // Top padding
-        views.setViewPadding(R.id.widget_time, 0, dpToPx(context, topPadding.coerceAtLeast(0)), 0, 0)
-        if (topPadding < 0 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            views.setViewLayoutMargin(
-                R.id.widget_time,
-                RemoteViews.MARGIN_TOP,
-                topPadding.toFloat(),
-                TypedValue.COMPLEX_UNIT_DIP,
-            )
+        // Paints
+        val timeSizePx = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, timeSize.toFloat(), dm)
+        val timePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = textColor
+            textSize = timeSizePx
+            typeface = createTypeface(timeWeight)
+            textAlign = Paint.Align.CENTER
+            letterSpacing = 0.02f
         }
 
-        // Time style: font weight via setTextAppearance (switches fontFamily to the right MiSans weight)
-        views.setInt(R.id.widget_time, "setTextAppearance", fontStyleForWeight(timeWeight))
-        views.setTextViewTextSize(R.id.widget_time, TypedValue.COMPLEX_UNIT_SP, timeSize.toFloat())
-        views.setTextColor(R.id.widget_time, textColor)
+        val infoSizePx = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 14f, dm)
+        val infoPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = textColor
+            textSize = infoSizePx
+            typeface = createTypeface(infoWeight)
+            textAlign = Paint.Align.CENTER
+        }
 
-        // Info line
+        // Text content
+        val timeStr = LocalTime.now().format(HH_MM)
         val infoText = try {
             buildInfoLine(context)
         } catch (_: Exception) {
@@ -130,57 +161,45 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
             "${today.monthValue}月${today.dayOfMonth}日"
         }
 
-        // Show info in top or bottom position
+        // Measure
+        val timeAscent = -timePaint.fontMetrics.ascent
+        val timeDescent = timePaint.fontMetrics.descent
+        val timeH = timeAscent + timeDescent
+
+        val infoAscent = -infoPaint.fontMetrics.ascent
+        val infoDescent = infoPaint.fontMetrics.descent
+        val infoH = infoAscent + infoDescent
+
+        val spacingPx = infoSpacing * density
+        val topPaddingPx = topPadding * density
+        val totalH = timeH + spacingPx + infoH
+
+        // Bitmap
+        val bitmap = Bitmap.createBitmap(widthPx, heightPx, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        val cx = widthPx / 2f
+        val baseY = (heightPx - totalH) / 2f + topPaddingPx
+
         if (infoAbove) {
-            views.setViewVisibility(R.id.widget_info_top, View.VISIBLE)
-            views.setViewVisibility(R.id.widget_info_bottom, View.GONE)
-            views.setInt(R.id.widget_info_top, "setTextAppearance", fontStyleForWeight(infoWeight))
-            views.setTextViewText(R.id.widget_info_top, infoText)
-            views.setTextColor(R.id.widget_info_top, textColor)
-            applySpacing(context, views, R.id.widget_info_top, infoSpacing, isBottom = false)
+            // Info first, then time
+            canvas.drawText(infoText, cx, baseY + infoAscent, infoPaint)
+            canvas.drawText(timeStr, cx, baseY + infoH + spacingPx + timeAscent, timePaint)
         } else {
-            views.setViewVisibility(R.id.widget_info_top, View.GONE)
-            views.setViewVisibility(R.id.widget_info_bottom, View.VISIBLE)
-            views.setInt(R.id.widget_info_bottom, "setTextAppearance", fontStyleForWeight(infoWeight))
-            views.setTextViewText(R.id.widget_info_bottom, infoText)
-            views.setTextColor(R.id.widget_info_bottom, textColor)
-            applySpacing(context, views, R.id.widget_info_bottom, infoSpacing, isBottom = true)
+            // Time first, then info
+            canvas.drawText(timeStr, cx, baseY + timeAscent, timePaint)
+            canvas.drawText(infoText, cx, baseY + timeH + spacingPx + infoAscent, infoPaint)
         }
 
+        views.setImageViewBitmap(R.id.widget_canvas, bitmap)
         return views
     }
 
-    /**
-     * Positive spacing: padding (works on all APIs).
-     * Negative spacing: layout margin (API 31+) to actually move the view without clipping.
-     */
-    private fun applySpacing(context: Context, views: RemoteViews, viewId: Int, spacingDp: Int, isBottom: Boolean) {
-        if (spacingDp >= 0) {
-            if (isBottom) {
-                views.setViewPadding(viewId, 0, dpToPx(context, spacingDp), 0, 0)
-            } else {
-                views.setViewPadding(viewId, 0, 0, 0, dpToPx(context, spacingDp))
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                val marginAttr = if (isBottom) RemoteViews.MARGIN_TOP else RemoteViews.MARGIN_BOTTOM
-                views.setViewLayoutMargin(viewId, marginAttr, 0f, TypedValue.COMPLEX_UNIT_DIP)
-            }
+    private fun createTypeface(weight: Int): Typeface {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            Typeface.create(null as Typeface?, weight, false)
         } else {
-            views.setViewPadding(viewId, 0, 0, 0, 0)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                val marginAttr = if (isBottom) RemoteViews.MARGIN_TOP else RemoteViews.MARGIN_BOTTOM
-                views.setViewLayoutMargin(
-                    viewId,
-                    marginAttr,
-                    spacingDp.toFloat(),
-                    TypedValue.COMPLEX_UNIT_DIP,
-                )
-            }
+            if (weight >= 600) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
         }
-    }
-
-    private fun dpToPx(context: Context, dp: Int): Int {
-        return (dp * context.resources.displayMetrics.density).toInt()
     }
 
     private fun buildInfoLine(context: Context): String {
@@ -198,7 +217,6 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
         val courseChars = SettingsStore.getWidgetCourseChars(context)
         val advanceMin = SettingsStore.getWidgetAdvanceMinutes(context)
 
-        // 1. Currently in class?
         val current = todayCourses.firstOrNull { now >= it.startTime && now <= it.endTime }
         if (current != null) {
             val next = todayCourses.firstOrNull { it.startTime > now }
@@ -211,13 +229,11 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
             return "$dateStr · ${truncate(current.summary, courseChars)}"
         }
 
-        // 2. Today has upcoming class?
         val next = todayCourses.firstOrNull { it.startTime > now }
         if (next != null) {
             return "$dateStr · ${truncate(next.summary, courseChars)} · ${next.startTime.format(HH_MM)}"
         }
 
-        // 3. Tomorrow has class?
         val tomorrow = today.plusDays(1)
         val tomorrowCourses = IcsParser.parse(icsContent, tomorrow)
         val tomorrowFirst = tomorrowCourses.firstOrNull()
@@ -225,16 +241,11 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
             return "$dateStr · ${truncate(tomorrowFirst.summary, courseChars)} · 明天${tomorrowFirst.startTime.format(HH_MM)}"
         }
 
-        // 4. No courses — show lunar
         return "$dateStr · ${getLunarStr(today)}"
     }
 
     private fun truncate(name: String, maxChars: Int): String {
-        return if (name.length > maxChars) {
-            name.take(maxChars) + "…"
-        } else {
-            name
-        }
+        return if (name.length > maxChars) name.take(maxChars) + "…" else name
     }
 
     private fun getLunarStr(date: LocalDate): String {
@@ -244,9 +255,7 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
             val lunarMonth = lunarDay.getLunarMonth()
             val yearName = lunarMonth.getLunarYear().getSixtyCycle().getName()
             "${yearName}年${lunarMonth.getName()}${lunarDay.getName()}"
-        } catch (_: Exception) {
-            ""
-        }
+        } catch (_: Exception) { "" }
     }
 
     private fun writeErrorLog(context: Context, e: Exception) {
