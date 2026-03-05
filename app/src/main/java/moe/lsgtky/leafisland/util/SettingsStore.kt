@@ -15,6 +15,10 @@ object SettingsStore {
     private const val KEY_WIDGET_TEXT_COLOR = "widget_text_color"
     private const val KEY_WIDGET_COURSE_CHARS = "widget_course_chars"
     private const val KEY_WIDGET_ADVANCE_MINUTES = "widget_advance_minutes"
+    private const val KEY_WIDGET_INFO_WEIGHT = "widget_info_weight"
+    private const val KEY_WIDGET_INFO_ABOVE = "widget_info_above"
+    private const val KEY_WIDGET_INFO_SPACING = "widget_info_spacing"
+    private const val KEY_WIDGET_TOP_PADDING = "widget_top_padding"
     const val DEFAULT_ADVANCE_MINUTES = 15
 
     fun getAdvanceMinutes(context: Context): Int {
@@ -140,5 +144,45 @@ object SettingsStore {
     fun setWidgetAdvanceMinutes(context: Context, minutes: Int) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit().putInt(KEY_WIDGET_ADVANCE_MINUTES, minutes.coerceIn(5, 120)).apply()
+    }
+
+    fun getWidgetInfoWeight(context: Context): Int {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getInt(KEY_WIDGET_INFO_WEIGHT, 400)
+    }
+
+    fun setWidgetInfoWeight(context: Context, weight: Int) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit().putInt(KEY_WIDGET_INFO_WEIGHT, weight).apply()
+    }
+
+    fun getWidgetInfoAbove(context: Context): Boolean {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getBoolean(KEY_WIDGET_INFO_ABOVE, false)
+    }
+
+    fun setWidgetInfoAbove(context: Context, above: Boolean) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit().putBoolean(KEY_WIDGET_INFO_ABOVE, above).apply()
+    }
+
+    fun getWidgetInfoSpacing(context: Context): Int {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getInt(KEY_WIDGET_INFO_SPACING, 2)
+    }
+
+    fun setWidgetInfoSpacing(context: Context, dp: Int) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit().putInt(KEY_WIDGET_INFO_SPACING, dp.coerceIn(0, 30)).apply()
+    }
+
+    fun getWidgetTopPadding(context: Context): Int {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getInt(KEY_WIDGET_TOP_PADDING, 8)
+    }
+
+    fun setWidgetTopPadding(context: Context, dp: Int) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit().putInt(KEY_WIDGET_TOP_PADDING, dp.coerceIn(0, 50)).apply()
     }
 }

@@ -10,6 +10,7 @@ import android.content.Intent
 import android.graphics.Color
 import android.os.SystemClock
 import android.util.TypedValue
+import android.view.View
 import android.widget.RemoteViews
 import com.tyme.solar.SolarDay
 import moe.lsgtky.leafisland.R
@@ -49,9 +50,8 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
                 val views = buildRemoteViews(context)
                 appWidgetManager.updateAppWidget(id, views)
             } catch (_: Exception) {
-                // Fallback: at least show something
                 val views = RemoteViews(context.packageName, R.layout.widget_schedule)
-                views.setTextViewText(R.id.widget_info, "小部件加载失败")
+                views.setTextViewText(R.id.widget_info_bottom, "小部件加载失败")
                 appWidgetManager.updateAppWidget(id, views)
             }
         }
@@ -86,6 +86,12 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
         } catch (_: Exception) {
             Color.WHITE
         }
+        val infoAbove = SettingsStore.getWidgetInfoAbove(context)
+        val infoSpacing = SettingsStore.getWidgetInfoSpacing(context)
+        val topPadding = SettingsStore.getWidgetTopPadding(context)
+
+        // Top padding on the clock
+        views.setViewPadding(R.id.widget_time, 0, dpToPx(context, topPadding), 0, 0)
 
         // Time style
         views.setTextViewTextSize(R.id.widget_time, TypedValue.COMPLEX_UNIT_SP, timeSize.toFloat())
@@ -98,10 +104,27 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
             val today = LocalDate.now()
             "${today.monthValue}月${today.dayOfMonth}日"
         }
-        views.setTextViewText(R.id.widget_info, infoText)
-        views.setTextColor(R.id.widget_info, textColor)
+
+        // Show info in top or bottom position
+        if (infoAbove) {
+            views.setViewVisibility(R.id.widget_info_top, View.VISIBLE)
+            views.setViewVisibility(R.id.widget_info_bottom, View.GONE)
+            views.setTextViewText(R.id.widget_info_top, infoText)
+            views.setTextColor(R.id.widget_info_top, textColor)
+            views.setViewPadding(R.id.widget_info_top, 0, 0, 0, dpToPx(context, infoSpacing))
+        } else {
+            views.setViewVisibility(R.id.widget_info_top, View.GONE)
+            views.setViewVisibility(R.id.widget_info_bottom, View.VISIBLE)
+            views.setTextViewText(R.id.widget_info_bottom, infoText)
+            views.setTextColor(R.id.widget_info_bottom, textColor)
+            views.setViewPadding(R.id.widget_info_bottom, 0, dpToPx(context, infoSpacing), 0, 0)
+        }
 
         return views
+    }
+
+    private fun dpToPx(context: Context, dp: Int): Int {
+        return (dp * context.resources.displayMetrics.density).toInt()
     }
 
     private fun buildInfoLine(context: Context): String {
@@ -122,7 +145,6 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
         // 1. Currently in class?
         val current = todayCourses.firstOrNull { now >= it.startTime && now <= it.endTime }
         if (current != null) {
-            // Check if next class is within advance time — if so, switch to showing next class
             val next = todayCourses.firstOrNull { it.startTime > now }
             if (next != null) {
                 val minutesUntil = Duration.between(now, next.startTime).toMinutes()

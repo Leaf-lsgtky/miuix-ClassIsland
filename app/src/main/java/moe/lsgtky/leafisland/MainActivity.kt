@@ -30,6 +30,7 @@ import moe.lsgtky.leafisland.notification.AlarmScheduler
 import moe.lsgtky.leafisland.notification.NotificationHelper
 import moe.lsgtky.leafisland.ui.ScheduleScreen
 import moe.lsgtky.leafisland.ui.SettingsScreen
+import moe.lsgtky.leafisland.ui.WidgetSettingsScreen
 import moe.lsgtky.leafisland.widget.ScheduleWidgetProvider
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
@@ -39,6 +40,7 @@ import java.time.LocalDate
 sealed interface Screen : NavKey {
     data object Home : Screen
     data object Settings : Screen
+    data object WidgetSettings : Screen
 }
 
 class MainActivity : ComponentActivity() {
@@ -107,6 +109,12 @@ class MainActivity : ComponentActivity() {
                     }
                     entry<Screen.Settings> {
                         SettingsScreen(
+                            onBack = { backStack.removeLastOrNull() },
+                            onWidgetSettings = { backStack.add(Screen.WidgetSettings) },
+                        )
+                    }
+                    entry<Screen.WidgetSettings> {
+                        WidgetSettingsScreen(
                             onBack = { backStack.removeLastOrNull() },
                         )
                     }

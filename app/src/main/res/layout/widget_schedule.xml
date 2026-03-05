@@ -6,6 +6,15 @@
     android:orientation="vertical"
     android:padding="8dp">
 
+    <TextView
+        android:id="@+id/widget_info_top"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textSize="14sp"
+        android:textColor="#FFFFFFFF"
+        android:visibility="gone" />
+
     <TextClock
         android:id="@+id/widget_time"
         android:layout_width="wrap_content"
@@ -18,10 +27,9 @@
         android:letterSpacing="0.02" />
 
     <TextView
-        android:id="@+id/widget_info"
+        android:id="@+id/widget_info_bottom"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
         android:text="加载中…"
         android:textSize="14sp"
         android:textColor="#FFFFFFFF" />
