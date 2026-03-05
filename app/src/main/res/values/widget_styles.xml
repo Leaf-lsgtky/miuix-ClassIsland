@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="WidgetFont400">
+        <item name="android:fontFamily">@font/misans_regular</item>
+    </style>
+    <style name="WidgetFont500">
+        <item name="android:fontFamily">@font/misans_medium</item>
+    </style>
+    <style name="WidgetFont600">
+        <item name="android:fontFamily">@font/misans_demibold</item>
+    </style>
+    <style name="WidgetFont700">
+        <item name="android:fontFamily">@font/misans_bold</item>
+    </style>
+    <style name="WidgetFont800">
+        <item name="android:fontFamily">@font/misans_heavy</item>
+    </style>
+    <style name="WidgetFont900">
+        <item name="android:fontFamily">@font/misans_heavy</item>
+    </style>
+</resources>

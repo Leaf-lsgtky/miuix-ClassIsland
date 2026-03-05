@@ -8,13 +8,8 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
-import android.graphics.Typeface
 import android.os.Build
 import android.os.SystemClock
-import android.text.SpannableString
-import android.text.Spanned
-import android.text.style.StyleSpan
-import android.text.style.TypefaceSpan
 import android.util.Log
 import android.util.TypedValue
 import android.view.View
@@ -45,6 +40,15 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
             val ids = mgr.getAppWidgetIds(ComponentName(context, ScheduleWidgetProvider::class.java))
             intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
             context.sendBroadcast(intent)
+        }
+
+        private fun fontStyleForWeight(weight: Int): Int = when (weight) {
+            400 -> R.style.WidgetFont400
+            500 -> R.style.WidgetFont500
+            600 -> R.style.WidgetFont600
+            800 -> R.style.WidgetFont800
+            900 -> R.style.WidgetFont900
+            else -> R.style.WidgetFont700
         }
     }
 
@@ -102,7 +106,7 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
         val infoSpacing = SettingsStore.getWidgetInfoSpacing(context)
         val topPadding = SettingsStore.getWidgetTopPadding(context)
 
-        // Top padding on the clock (only positive via padding)
+        // Top padding
         views.setViewPadding(R.id.widget_time, 0, dpToPx(context, topPadding.coerceAtLeast(0)), 0, 0)
         if (topPadding < 0 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             views.setViewLayoutMargin(
@@ -113,9 +117,8 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
             )
         }
 
-        // Time text with font weight via SpannableString
-        val timeStr = LocalTime.now().format(HH_MM)
-        views.setTextViewText(R.id.widget_time, styledText(timeStr, timeWeight))
+        // Time style: font weight via setTextAppearance (switches fontFamily to the right MiSans weight)
+        views.setInt(R.id.widget_time, "setTextAppearance", fontStyleForWeight(timeWeight))
         views.setTextViewTextSize(R.id.widget_time, TypedValue.COMPLEX_UNIT_SP, timeSize.toFloat())
         views.setTextColor(R.id.widget_time, textColor)
 
@@ -131,13 +134,15 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
         if (infoAbove) {
             views.setViewVisibility(R.id.widget_info_top, View.VISIBLE)
             views.setViewVisibility(R.id.widget_info_bottom, View.GONE)
-            views.setTextViewText(R.id.widget_info_top, styledText(infoText, infoWeight))
+            views.setInt(R.id.widget_info_top, "setTextAppearance", fontStyleForWeight(infoWeight))
+            views.setTextViewText(R.id.widget_info_top, infoText)
             views.setTextColor(R.id.widget_info_top, textColor)
             applySpacing(context, views, R.id.widget_info_top, infoSpacing, isBottom = false)
         } else {
             views.setViewVisibility(R.id.widget_info_top, View.GONE)
             views.setViewVisibility(R.id.widget_info_bottom, View.VISIBLE)
-            views.setTextViewText(R.id.widget_info_bottom, styledText(infoText, infoWeight))
+            views.setInt(R.id.widget_info_bottom, "setTextAppearance", fontStyleForWeight(infoWeight))
+            views.setTextViewText(R.id.widget_info_bottom, infoText)
             views.setTextColor(R.id.widget_info_bottom, textColor)
             applySpacing(context, views, R.id.widget_info_bottom, infoSpacing, isBottom = true)
         }
@@ -146,34 +151,8 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
     }
 
     /**
-     * Create a SpannableString with the specified font weight.
-     * API 28+: uses TypefaceSpan(Typeface) for precise weight control.
-     * Older: falls back to StyleSpan(BOLD) for weight >= 600.
-     */
-    private fun styledText(text: String, weight: Int): CharSequence {
-        val spannable = SpannableString(text)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            val typeface = Typeface.create(null, weight, false)
-            spannable.setSpan(
-                TypefaceSpan(typeface),
-                0, spannable.length,
-                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
-            )
-        } else {
-            val style = if (weight >= 600) Typeface.BOLD else Typeface.NORMAL
-            spannable.setSpan(
-                StyleSpan(style),
-                0, spannable.length,
-                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
-            )
-        }
-        return spannable
-    }
-
-    /**
-     * Apply spacing between info text and time.
-     * Positive: use padding (safe on all APIs).
-     * Negative: use layout margin (API 31+) so the view actually moves, avoiding clipping.
+     * Positive spacing: padding (works on all APIs).
+     * Negative spacing: layout margin (API 31+) to actually move the view without clipping.
      */
     private fun applySpacing(context: Context, views: RemoteViews, viewId: Int, spacingDp: Int, isBottom: Boolean) {
         if (spacingDp >= 0) {
@@ -182,7 +161,6 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
             } else {
                 views.setViewPadding(viewId, 0, 0, 0, dpToPx(context, spacingDp))
             }
-            // Reset any previously set negative margin
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 val marginAttr = if (isBottom) RemoteViews.MARGIN_TOP else RemoteViews.MARGIN_BOTTOM
                 views.setViewLayoutMargin(viewId, marginAttr, 0f, TypedValue.COMPLEX_UNIT_DIP)
