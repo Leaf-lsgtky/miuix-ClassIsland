@@ -8,7 +8,13 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
+import android.graphics.Typeface
+import android.os.Build
 import android.os.SystemClock
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.style.StyleSpan
+import android.text.style.TypefaceSpan
 import android.util.Log
 import android.util.TypedValue
 import android.view.View
@@ -84,6 +90,8 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
         val views = RemoteViews(context.packageName, R.layout.widget_schedule)
 
         val timeSize = SettingsStore.getWidgetTimeSize(context)
+        val timeWeight = SettingsStore.getWidgetTimeWeight(context)
+        val infoWeight = SettingsStore.getWidgetInfoWeight(context)
         val textColorStr = SettingsStore.getWidgetTextColor(context)
         val textColor = try {
             Color.parseColor(textColorStr)
@@ -94,10 +102,20 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
         val infoSpacing = SettingsStore.getWidgetInfoSpacing(context)
         val topPadding = SettingsStore.getWidgetTopPadding(context)
 
-        // Top padding on the clock
-        views.setViewPadding(R.id.widget_time, 0, dpToPx(context, topPadding), 0, 0)
+        // Top padding on the clock (only positive via padding)
+        views.setViewPadding(R.id.widget_time, 0, dpToPx(context, topPadding.coerceAtLeast(0)), 0, 0)
+        if (topPadding < 0 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            views.setViewLayoutMargin(
+                R.id.widget_time,
+                RemoteViews.MARGIN_TOP,
+                topPadding.toFloat(),
+                TypedValue.COMPLEX_UNIT_DIP,
+            )
+        }
 
-        // Time style
+        // Time text with font weight via SpannableString
+        val timeStr = LocalTime.now().format(HH_MM)
+        views.setTextViewText(R.id.widget_time, styledText(timeStr, timeWeight))
         views.setTextViewTextSize(R.id.widget_time, TypedValue.COMPLEX_UNIT_SP, timeSize.toFloat())
         views.setTextColor(R.id.widget_time, textColor)
 
@@ -113,18 +131,74 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
         if (infoAbove) {
             views.setViewVisibility(R.id.widget_info_top, View.VISIBLE)
             views.setViewVisibility(R.id.widget_info_bottom, View.GONE)
-            views.setTextViewText(R.id.widget_info_top, infoText)
+            views.setTextViewText(R.id.widget_info_top, styledText(infoText, infoWeight))
             views.setTextColor(R.id.widget_info_top, textColor)
-            views.setViewPadding(R.id.widget_info_top, 0, 0, 0, dpToPx(context, infoSpacing))
+            applySpacing(context, views, R.id.widget_info_top, infoSpacing, isBottom = false)
         } else {
             views.setViewVisibility(R.id.widget_info_top, View.GONE)
             views.setViewVisibility(R.id.widget_info_bottom, View.VISIBLE)
-            views.setTextViewText(R.id.widget_info_bottom, infoText)
+            views.setTextViewText(R.id.widget_info_bottom, styledText(infoText, infoWeight))
             views.setTextColor(R.id.widget_info_bottom, textColor)
-            views.setViewPadding(R.id.widget_info_bottom, 0, dpToPx(context, infoSpacing), 0, 0)
+            applySpacing(context, views, R.id.widget_info_bottom, infoSpacing, isBottom = true)
         }
 
         return views
+    }
+
+    /**
+     * Create a SpannableString with the specified font weight.
+     * API 28+: uses TypefaceSpan(Typeface) for precise weight control.
+     * Older: falls back to StyleSpan(BOLD) for weight >= 600.
+     */
+    private fun styledText(text: String, weight: Int): CharSequence {
+        val spannable = SpannableString(text)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            val typeface = Typeface.create(null, weight, false)
+            spannable.setSpan(
+                TypefaceSpan(typeface),
+                0, spannable.length,
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+            )
+        } else {
+            val style = if (weight >= 600) Typeface.BOLD else Typeface.NORMAL
+            spannable.setSpan(
+                StyleSpan(style),
+                0, spannable.length,
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+            )
+        }
+        return spannable
+    }
+
+    /**
+     * Apply spacing between info text and time.
+     * Positive: use padding (safe on all APIs).
+     * Negative: use layout margin (API 31+) so the view actually moves, avoiding clipping.
+     */
+    private fun applySpacing(context: Context, views: RemoteViews, viewId: Int, spacingDp: Int, isBottom: Boolean) {
+        if (spacingDp >= 0) {
+            if (isBottom) {
+                views.setViewPadding(viewId, 0, dpToPx(context, spacingDp), 0, 0)
+            } else {
+                views.setViewPadding(viewId, 0, 0, 0, dpToPx(context, spacingDp))
+            }
+            // Reset any previously set negative margin
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val marginAttr = if (isBottom) RemoteViews.MARGIN_TOP else RemoteViews.MARGIN_BOTTOM
+                views.setViewLayoutMargin(viewId, marginAttr, 0f, TypedValue.COMPLEX_UNIT_DIP)
+            }
+        } else {
+            views.setViewPadding(viewId, 0, 0, 0, 0)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val marginAttr = if (isBottom) RemoteViews.MARGIN_TOP else RemoteViews.MARGIN_BOTTOM
+                views.setViewLayoutMargin(
+                    viewId,
+                    marginAttr,
+                    spacingDp.toFloat(),
+                    TypedValue.COMPLEX_UNIT_DIP,
+                )
+            }
+        }
     }
 
     private fun dpToPx(context: Context, dp: Int): Int {
@@ -204,7 +278,6 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
                 .format(java.util.Date())
             val entry = "[$timestamp] ${e::class.simpleName}: ${e.message}\n${e.stackTraceToString()}\n\n"
             logFile.appendText(entry)
-            // Keep log file under 50KB
             if (logFile.length() > 50_000) {
                 val lines = logFile.readLines()
                 logFile.writeText(lines.takeLast(200).joinToString("\n"))
