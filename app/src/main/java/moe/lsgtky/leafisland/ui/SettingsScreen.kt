@@ -27,6 +27,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import moe.lsgtky.leafisland.data.IcsParser
 import moe.lsgtky.leafisland.data.ScheduledPush
 import moe.lsgtky.leafisland.notification.AlarmScheduler
@@ -84,6 +85,10 @@ fun SettingsScreen(
         is24Hour = true,
     )
     var dismissSliderValue by remember { mutableFloatStateOf(30f) }
+
+    // --- Widget log state ---
+    val showLogDialog = remember { mutableStateOf(false) }
+    var logContent by remember { mutableStateOf("") }
 
     Scaffold(
         topBar = {
@@ -232,6 +237,15 @@ fun SettingsScreen(
                         summary = "自定义桌面小部件外观",
                         onClick = onWidgetSettings,
                     )
+                    SuperArrow(
+                        title = "小部件错误日志",
+                        summary = "查看小部件运行日志",
+                        onClick = {
+                            val logFile = File(context.filesDir, "widget_error.log")
+                            logContent = if (logFile.exists()) logFile.readText() else "暂无日志"
+                            showLogDialog.value = true
+                        },
+                    )
                 }
             }
         }
@@ -363,6 +377,47 @@ fun SettingsScreen(
                             }
                             showDeleteDialog.value = false
                         },
+                        colors = ButtonDefaults.textButtonColorsPrimary(),
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+        }
+
+        // --- Widget error log dialog ---
+        SuperDialog(
+            show = showLogDialog,
+            title = "小部件错误日志",
+            onDismissRequest = { showLogDialog.value = false },
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(300.dp),
+                ) {
+                    item {
+                        Text(
+                            text = logContent,
+                            fontSize = 11.sp,
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    TextButton(
+                        text = "清除日志",
+                        onClick = {
+                            val logFile = File(context.filesDir, "widget_error.log")
+                            if (logFile.exists()) logFile.delete()
+                            logContent = "暂无日志"
+                        },
+                        modifier = Modifier.weight(1f),
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    TextButton(
+                        text = "关闭",
+                        onClick = { showLogDialog.value = false },
                         colors = ButtonDefaults.textButtonColorsPrimary(),
                         modifier = Modifier.weight(1f),
                     )

@@ -8,8 +8,8 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
-import android.os.Build
 import android.os.SystemClock
+import android.util.Log
 import android.util.TypedValue
 import android.view.View
 import android.widget.RemoteViews
@@ -26,6 +26,7 @@ import java.time.format.DateTimeFormatter
 class ScheduleWidgetProvider : AppWidgetProvider() {
 
     companion object {
+        private const val TAG = "ScheduleWidget"
         private const val ACTION_WIDGET_UPDATE = "moe.lsgtky.leafisland.ACTION_WIDGET_UPDATE"
         private const val ALARM_REQUEST_CODE = 0x57_1D_6E_70
         private val HH_MM = DateTimeFormatter.ofPattern("HH:mm")
@@ -50,9 +51,11 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
             try {
                 val views = buildRemoteViews(context)
                 appWidgetManager.updateAppWidget(id, views)
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                Log.e(TAG, "Widget update failed", e)
+                writeErrorLog(context, e)
                 val views = RemoteViews(context.packageName, R.layout.widget_schedule)
-                views.setTextViewText(R.id.widget_info_bottom, "小部件加载失败")
+                views.setTextViewText(R.id.widget_info_bottom, "小部件加载失败: ${e.message}")
                 appWidgetManager.updateAppWidget(id, views)
             }
         }
@@ -95,15 +98,8 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
         views.setViewPadding(R.id.widget_time, 0, dpToPx(context, topPadding), 0, 0)
 
         // Time style
-        val timeWeight = SettingsStore.getWidgetTimeWeight(context)
-        val infoWeight = SettingsStore.getWidgetInfoWeight(context)
         views.setTextViewTextSize(R.id.widget_time, TypedValue.COMPLEX_UNIT_SP, timeSize.toFloat())
         views.setTextColor(R.id.widget_time, textColor)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            try {
-                views.setInt(R.id.widget_time, "setTextFontWeight", timeWeight)
-            } catch (_: Exception) { }
-        }
 
         // Info line
         val infoText = try {
@@ -120,22 +116,12 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
             views.setTextViewText(R.id.widget_info_top, infoText)
             views.setTextColor(R.id.widget_info_top, textColor)
             views.setViewPadding(R.id.widget_info_top, 0, 0, 0, dpToPx(context, infoSpacing))
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                try {
-                    views.setInt(R.id.widget_info_top, "setTextFontWeight", infoWeight)
-                } catch (_: Exception) { }
-            }
         } else {
             views.setViewVisibility(R.id.widget_info_top, View.GONE)
             views.setViewVisibility(R.id.widget_info_bottom, View.VISIBLE)
             views.setTextViewText(R.id.widget_info_bottom, infoText)
             views.setTextColor(R.id.widget_info_bottom, textColor)
             views.setViewPadding(R.id.widget_info_bottom, 0, dpToPx(context, infoSpacing), 0, 0)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                try {
-                    views.setInt(R.id.widget_info_bottom, "setTextFontWeight", infoWeight)
-                } catch (_: Exception) { }
-            }
         }
 
         return views
@@ -209,6 +195,21 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
         } catch (_: Exception) {
             ""
         }
+    }
+
+    private fun writeErrorLog(context: Context, e: Exception) {
+        try {
+            val logFile = File(context.filesDir, "widget_error.log")
+            val timestamp = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
+                .format(java.util.Date())
+            val entry = "[$timestamp] ${e::class.simpleName}: ${e.message}\n${e.stackTraceToString()}\n\n"
+            logFile.appendText(entry)
+            // Keep log file under 50KB
+            if (logFile.length() > 50_000) {
+                val lines = logFile.readLines()
+                logFile.writeText(lines.takeLast(200).joinToString("\n"))
+            }
+        } catch (_: Exception) { }
     }
 
     private fun scheduleMinuteAlarm(context: Context) {
