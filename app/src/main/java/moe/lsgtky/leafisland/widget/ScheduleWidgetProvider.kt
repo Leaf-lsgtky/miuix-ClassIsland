@@ -157,7 +157,7 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
     private fun getLunarStr(date: LocalDate): String {
         val solarDay = SolarDay.fromYmd(date.year, date.monthValue, date.dayOfMonth)
         val lunarDay = solarDay.getLunarDay()
-        return "农历${lunarDay.month.name}${lunarDay.name}"
+        return "农历${lunarDay.getLunarMonth().getName()}${lunarDay.getName()}"
     }
 
     private fun scheduleMinuteAlarm(context: Context) {
