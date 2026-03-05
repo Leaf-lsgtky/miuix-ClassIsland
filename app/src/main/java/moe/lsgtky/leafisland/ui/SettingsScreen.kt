@@ -32,6 +32,7 @@ import moe.lsgtky.leafisland.data.ScheduledPush
 import moe.lsgtky.leafisland.notification.AlarmScheduler
 import moe.lsgtky.leafisland.notification.NotificationHelper
 import moe.lsgtky.leafisland.util.SettingsStore
+import moe.lsgtky.leafisland.widget.ScheduleWidgetProvider
 import java.time.LocalDate
 import java.time.LocalTime
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -83,6 +84,22 @@ fun SettingsScreen(
         is24Hour = true,
     )
     var dismissSliderValue by remember { mutableFloatStateOf(30f) }
+
+    // --- Widget settings state ---
+    var widgetTimeSize by remember { mutableIntStateOf(SettingsStore.getWidgetTimeSize(context)) }
+    var widgetTimeWeight by remember { mutableIntStateOf(SettingsStore.getWidgetTimeWeight(context)) }
+    var widgetTextColor by remember { mutableStateOf(SettingsStore.getWidgetTextColor(context)) }
+    var widgetCourseChars by remember { mutableIntStateOf(SettingsStore.getWidgetCourseChars(context)) }
+    var widgetAdvanceMin by remember { mutableIntStateOf(SettingsStore.getWidgetAdvanceMinutes(context)) }
+    val showWidgetTimeSizeDialog = remember { mutableStateOf(false) }
+    val showWidgetWeightDialog = remember { mutableStateOf(false) }
+    val showWidgetColorDialog = remember { mutableStateOf(false) }
+    val showWidgetCharsDialog = remember { mutableStateOf(false) }
+    val showWidgetAdvanceDialog = remember { mutableStateOf(false) }
+    var widgetTimeSizeSlider by remember { mutableFloatStateOf(widgetTimeSize.toFloat()) }
+    var widgetCharsSlider by remember { mutableFloatStateOf(widgetCourseChars.toFloat()) }
+    var widgetAdvanceSlider by remember { mutableFloatStateOf(widgetAdvanceMin.toFloat()) }
+    var widgetColorInput by remember { mutableStateOf(widgetTextColor) }
 
     Scaffold(
         topBar = {
@@ -209,6 +226,60 @@ fun SettingsScreen(
                         onClick = {
                             dismissSliderValue = 30f
                             showTimePickerDialog.value = true
+                        },
+                    )
+                }
+            }
+
+            // --- 小部件 section ---
+            item {
+                SmallTitle(text = "小部件")
+            }
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp)
+                        .padding(bottom = 6.dp),
+                    insideMargin = PaddingValues(0.dp),
+                ) {
+                    SuperArrow(
+                        title = "时间字号",
+                        summary = "${widgetTimeSize}sp",
+                        onClick = {
+                            widgetTimeSizeSlider = widgetTimeSize.toFloat()
+                            showWidgetTimeSizeDialog.value = true
+                        },
+                    )
+                    SuperArrow(
+                        title = "时间粗细",
+                        summary = weightLabel(widgetTimeWeight),
+                        onClick = {
+                            showWidgetWeightDialog.value = true
+                        },
+                    )
+                    SuperArrow(
+                        title = "文字颜色",
+                        summary = widgetTextColor,
+                        onClick = {
+                            widgetColorInput = widgetTextColor
+                            showWidgetColorDialog.value = true
+                        },
+                    )
+                    SuperArrow(
+                        title = "课程显示字数",
+                        summary = "${widgetCourseChars}个字",
+                        onClick = {
+                            widgetCharsSlider = widgetCourseChars.toFloat()
+                            showWidgetCharsDialog.value = true
+                        },
+                    )
+                    SuperArrow(
+                        title = "提前显示时间",
+                        summary = "${widgetAdvanceMin} 分钟",
+                        onClick = {
+                            widgetAdvanceSlider = widgetAdvanceMin.toFloat()
+                            showWidgetAdvanceDialog.value = true
                         },
                     )
                 }
@@ -348,5 +419,193 @@ fun SettingsScreen(
                 }
             }
         }
+
+        // --- Widget time size dialog ---
+        SuperDialog(
+            show = showWidgetTimeSizeDialog,
+            title = "时间字号",
+            onDismissRequest = { showWidgetTimeSizeDialog.value = false },
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(text = "${widgetTimeSizeSlider.toInt()}sp")
+                Slider(
+                    value = widgetTimeSizeSlider,
+                    onValueChange = { widgetTimeSizeSlider = it },
+                    valueRange = 30f..80f,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    TextButton(
+                        text = "取消",
+                        onClick = { showWidgetTimeSizeDialog.value = false },
+                        modifier = Modifier.weight(1f),
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    TextButton(
+                        text = "确定",
+                        onClick = {
+                            val v = widgetTimeSizeSlider.toInt()
+                            SettingsStore.setWidgetTimeSize(context, v)
+                            widgetTimeSize = v
+                            showWidgetTimeSizeDialog.value = false
+                            ScheduleWidgetProvider.triggerUpdate(context)
+                        },
+                        colors = ButtonDefaults.textButtonColorsPrimary(),
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+        }
+
+        // --- Widget weight dialog ---
+        SuperDialog(
+            show = showWidgetWeightDialog,
+            title = "时间粗细",
+            onDismissRequest = { showWidgetWeightDialog.value = false },
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                val weights = listOf(400, 500, 600, 700, 800, 900)
+                for (w in weights) {
+                    TextButton(
+                        text = weightLabel(w),
+                        onClick = {
+                            SettingsStore.setWidgetTimeWeight(context, w)
+                            widgetTimeWeight = w
+                            showWidgetWeightDialog.value = false
+                            ScheduleWidgetProvider.triggerUpdate(context)
+                        },
+                        colors = if (w == widgetTimeWeight) ButtonDefaults.textButtonColorsPrimary()
+                        else ButtonDefaults.textButtonColors(),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+        }
+
+        // --- Widget color dialog ---
+        SuperDialog(
+            show = showWidgetColorDialog,
+            title = "文字颜色",
+            onDismissRequest = { showWidgetColorDialog.value = false },
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                TextField(
+                    value = widgetColorInput,
+                    onValueChange = { widgetColorInput = it },
+                    label = "十六进制颜色 (如 #FFFFFF)",
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    TextButton(
+                        text = "取消",
+                        onClick = { showWidgetColorDialog.value = false },
+                        modifier = Modifier.weight(1f),
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    TextButton(
+                        text = "确定",
+                        onClick = {
+                            val color = widgetColorInput.trim()
+                            SettingsStore.setWidgetTextColor(context, color)
+                            widgetTextColor = color
+                            showWidgetColorDialog.value = false
+                            ScheduleWidgetProvider.triggerUpdate(context)
+                        },
+                        colors = ButtonDefaults.textButtonColorsPrimary(),
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+        }
+
+        // --- Widget course chars dialog ---
+        SuperDialog(
+            show = showWidgetCharsDialog,
+            title = "课程显示字数",
+            onDismissRequest = { showWidgetCharsDialog.value = false },
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(text = "${widgetCharsSlider.toInt()}个字")
+                Slider(
+                    value = widgetCharsSlider,
+                    onValueChange = { widgetCharsSlider = it },
+                    valueRange = 2f..10f,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    TextButton(
+                        text = "取消",
+                        onClick = { showWidgetCharsDialog.value = false },
+                        modifier = Modifier.weight(1f),
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    TextButton(
+                        text = "确定",
+                        onClick = {
+                            val v = widgetCharsSlider.toInt()
+                            SettingsStore.setWidgetCourseChars(context, v)
+                            widgetCourseChars = v
+                            showWidgetCharsDialog.value = false
+                            ScheduleWidgetProvider.triggerUpdate(context)
+                        },
+                        colors = ButtonDefaults.textButtonColorsPrimary(),
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+        }
+
+        // --- Widget advance minutes dialog ---
+        SuperDialog(
+            show = showWidgetAdvanceDialog,
+            title = "提前显示时间",
+            onDismissRequest = { showWidgetAdvanceDialog.value = false },
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(text = "${widgetAdvanceSlider.toInt()} 分钟")
+                Slider(
+                    value = widgetAdvanceSlider,
+                    onValueChange = { widgetAdvanceSlider = it },
+                    valueRange = 5f..120f,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    TextButton(
+                        text = "取消",
+                        onClick = { showWidgetAdvanceDialog.value = false },
+                        modifier = Modifier.weight(1f),
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    TextButton(
+                        text = "确定",
+                        onClick = {
+                            val v = widgetAdvanceSlider.toInt()
+                            SettingsStore.setWidgetAdvanceMinutes(context, v)
+                            widgetAdvanceMin = v
+                            showWidgetAdvanceDialog.value = false
+                            ScheduleWidgetProvider.triggerUpdate(context)
+                        },
+                        colors = ButtonDefaults.textButtonColorsPrimary(),
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun weightLabel(weight: Int): String {
+    return when (weight) {
+        400 -> "Regular (400)"
+        500 -> "Medium (500)"
+        600 -> "SemiBold (600)"
+        700 -> "Bold (700)"
+        800 -> "ExtraBold (800)"
+        900 -> "Black (900)"
+        else -> "$weight"
     }
 }

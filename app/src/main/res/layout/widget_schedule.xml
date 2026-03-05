@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="8dp">
+
+    <TextClock
+        android:id="@+id/widget_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:format24Hour="HH:mm"
+        android:format12Hour="HH:mm"
+        android:textSize="56sp"
+        android:textStyle="bold"
+        android:textColor="#FFFFFFFF"
+        android:letterSpacing="0.02" />
+
+    <TextView
+        android:id="@+id/widget_info"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:text="加载中…"
+        android:textSize="14sp"
+        android:textColor="#FFFFFFFF" />
+
+</LinearLayout>

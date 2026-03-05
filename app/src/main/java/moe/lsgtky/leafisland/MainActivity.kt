@@ -30,6 +30,7 @@ import moe.lsgtky.leafisland.notification.AlarmScheduler
 import moe.lsgtky.leafisland.notification.NotificationHelper
 import moe.lsgtky.leafisland.ui.ScheduleScreen
 import moe.lsgtky.leafisland.ui.SettingsScreen
+import moe.lsgtky.leafisland.widget.ScheduleWidgetProvider
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
 import java.io.File
@@ -176,6 +177,7 @@ class MainActivity : ComponentActivity() {
         tomorrowCourses = IcsParser.parse(icsContent, tomorrow)
         hasData = true
         rescheduleAlarms()
+        ScheduleWidgetProvider.triggerUpdate(this)
     }
 
     private fun saveIcsContent(content: String) {

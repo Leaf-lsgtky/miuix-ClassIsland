@@ -57,5 +57,6 @@ dependencies {
     implementation(libs.miuix.icons)
     implementation(libs.miuix.navigation3)
     implementation(libs.navigation3.runtime)
+    implementation(libs.tyme4kt)
     debugImplementation(libs.compose.ui.tooling)
 }

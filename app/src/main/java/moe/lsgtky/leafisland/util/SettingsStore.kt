@@ -10,6 +10,11 @@ object SettingsStore {
     private const val KEY_ADVANCE_MINUTES = "advance_minutes"
     private const val KEY_SCHEDULED_REQUEST_CODES = "scheduled_request_codes"
     private const val KEY_SCHEDULED_PUSHES = "scheduled_pushes"
+    private const val KEY_WIDGET_TIME_SIZE = "widget_time_size"
+    private const val KEY_WIDGET_TIME_WEIGHT = "widget_time_weight"
+    private const val KEY_WIDGET_TEXT_COLOR = "widget_text_color"
+    private const val KEY_WIDGET_COURSE_CHARS = "widget_course_chars"
+    private const val KEY_WIDGET_ADVANCE_MINUTES = "widget_advance_minutes"
     const val DEFAULT_ADVANCE_MINUTES = 15
 
     fun getAdvanceMinutes(context: Context): Int {
@@ -83,5 +88,57 @@ object SettingsStore {
             .edit()
             .putString(KEY_SCHEDULED_PUSHES, arr.toString())
             .apply()
+    }
+
+    // --- Widget settings ---
+
+    fun getWidgetTimeSize(context: Context): Int {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getInt(KEY_WIDGET_TIME_SIZE, 56)
+    }
+
+    fun setWidgetTimeSize(context: Context, size: Int) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit().putInt(KEY_WIDGET_TIME_SIZE, size.coerceIn(30, 80)).apply()
+    }
+
+    fun getWidgetTimeWeight(context: Context): Int {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getInt(KEY_WIDGET_TIME_WEIGHT, 700)
+    }
+
+    fun setWidgetTimeWeight(context: Context, weight: Int) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit().putInt(KEY_WIDGET_TIME_WEIGHT, weight).apply()
+    }
+
+    fun getWidgetTextColor(context: Context): String {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getString(KEY_WIDGET_TEXT_COLOR, "#FFFFFFFF") ?: "#FFFFFFFF"
+    }
+
+    fun setWidgetTextColor(context: Context, color: String) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit().putString(KEY_WIDGET_TEXT_COLOR, color).apply()
+    }
+
+    fun getWidgetCourseChars(context: Context): Int {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getInt(KEY_WIDGET_COURSE_CHARS, 4)
+    }
+
+    fun setWidgetCourseChars(context: Context, chars: Int) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit().putInt(KEY_WIDGET_COURSE_CHARS, chars.coerceIn(2, 10)).apply()
+    }
+
+    fun getWidgetAdvanceMinutes(context: Context): Int {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getInt(KEY_WIDGET_ADVANCE_MINUTES, 30)
+    }
+
+    fun setWidgetAdvanceMinutes(context: Context, minutes: Int) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit().putInt(KEY_WIDGET_ADVANCE_MINUTES, minutes.coerceIn(5, 120)).apply()
     }
 }
