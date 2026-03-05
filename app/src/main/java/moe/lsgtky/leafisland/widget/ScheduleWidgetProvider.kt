@@ -25,7 +25,7 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
 
     companion object {
         private const val ACTION_WIDGET_UPDATE = "moe.lsgtky.leafisland.ACTION_WIDGET_UPDATE"
-        private const val ALARM_REQUEST_CODE = 0x57_1D_6E_70 // "widget"
+        private const val ALARM_REQUEST_CODE = 0x57_1D_6E_70
         private val HH_MM = DateTimeFormatter.ofPattern("HH:mm")
 
         fun triggerUpdate(context: Context) {
@@ -44,9 +44,16 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray,
     ) {
-        val views = buildRemoteViews(context)
         for (id in appWidgetIds) {
-            appWidgetManager.updateAppWidget(id, views)
+            try {
+                val views = buildRemoteViews(context)
+                appWidgetManager.updateAppWidget(id, views)
+            } catch (_: Exception) {
+                // Fallback: at least show something
+                val views = RemoteViews(context.packageName, R.layout.widget_schedule)
+                views.setTextViewText(R.id.widget_info, "小部件加载失败")
+                appWidgetManager.updateAppWidget(id, views)
+            }
         }
     }
 
@@ -73,7 +80,6 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
         val views = RemoteViews(context.packageName, R.layout.widget_schedule)
 
         val timeSize = SettingsStore.getWidgetTimeSize(context)
-        val timeWeight = SettingsStore.getWidgetTimeWeight(context)
         val textColorStr = SettingsStore.getWidgetTextColor(context)
         val textColor = try {
             Color.parseColor(textColorStr)
@@ -84,14 +90,14 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
         // Time style
         views.setTextViewTextSize(R.id.widget_time, TypedValue.COMPLEX_UNIT_SP, timeSize.toFloat())
         views.setTextColor(R.id.widget_time, textColor)
-        // Bold via textStyle: RemoteViews doesn't support setTypeface directly,
-        // but we set bold in XML. For weight control we use the textFontWeight attribute via setInt.
-        if (android.os.Build.VERSION.SDK_INT >= 28) {
-            views.setInt(R.id.widget_time, "setTextFontWeight", timeWeight)
-        }
 
         // Info line
-        val infoText = buildInfoLine(context)
+        val infoText = try {
+            buildInfoLine(context)
+        } catch (_: Exception) {
+            val today = LocalDate.now()
+            "${today.monthValue}月${today.dayOfMonth}日"
+        }
         views.setTextViewText(R.id.widget_info, infoText)
         views.setTextColor(R.id.widget_info, textColor)
 
@@ -131,12 +137,6 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
         // 3. Check tomorrow
         val tomorrow = today.plusDays(1)
         val tomorrowCourses = IcsParser.parse(icsContent, tomorrow)
-        if (tomorrowCourses.isNotEmpty()) {
-            // Today has no more upcoming classes but tomorrow does — still show lunar
-            // (per requirement: show lunar only if "找到第二天都没课")
-            // Actually, today might still have upcoming classes beyond advance time
-            // Show lunar since no imminent class
-        }
 
         if (todayCourses.isEmpty() && tomorrowCourses.isEmpty()) {
             return "$dateStr · ${getLunarStr(today)}"
@@ -155,9 +155,13 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
     }
 
     private fun getLunarStr(date: LocalDate): String {
-        val solarDay = SolarDay.fromYmd(date.year, date.monthValue, date.dayOfMonth)
-        val lunarDay = solarDay.getLunarDay()
-        return "农历${lunarDay.getLunarMonth().getName()}${lunarDay.getName()}"
+        return try {
+            val solarDay = SolarDay.fromYmd(date.year, date.monthValue, date.dayOfMonth)
+            val lunarDay = solarDay.getLunarDay()
+            "农历${lunarDay.getLunarMonth().getName()}${lunarDay.getName()}"
+        } catch (_: Exception) {
+            "农历"
+        }
     }
 
     private fun scheduleMinuteAlarm(context: Context) {
