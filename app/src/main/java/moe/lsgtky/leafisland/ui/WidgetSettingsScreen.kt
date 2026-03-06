@@ -2,6 +2,7 @@ package moe.lsgtky.leafisland.ui
 
 import android.graphics.Color as AndroidColor
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -22,6 +23,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toArgb
@@ -155,7 +158,9 @@ fun WidgetSettingsScreen(
                         contentScale = ContentScale.Fit,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .aspectRatio(300f / 120f),
+                            .aspectRatio(300f / 120f)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color.Black),
                     )
                 }
             }
