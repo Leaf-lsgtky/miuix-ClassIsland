@@ -221,9 +221,12 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
         views.setImageViewBitmap(R.id.widget_canvas, bitmap)
 
         // Click: top area → clock app, bottom area → our app (swap if infoAbove)
+        val clockLaunchIntent = context.packageManager.getLaunchIntentForPackage("com.android.deskclock")
+            ?: context.packageManager.getLaunchIntentForPackage("com.google.android.deskclock")
+            ?: Intent(AlarmClock.ACTION_SHOW_ALARMS)
+        clockLaunchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         val clockIntent = PendingIntent.getActivity(
-            context, 0,
-            Intent(AlarmClock.ACTION_SHOW_ALARMS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            context, 0, clockLaunchIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         val appIntent = PendingIntent.getActivity(
