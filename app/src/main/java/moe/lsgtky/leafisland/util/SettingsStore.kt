@@ -19,6 +19,7 @@ object SettingsStore {
     private const val KEY_WIDGET_INFO_ABOVE = "widget_info_above"
     private const val KEY_WIDGET_INFO_SPACING = "widget_info_spacing"
     private const val KEY_WIDGET_TOP_PADDING = "widget_top_padding"
+    private const val KEY_WIDGET_INFO_SIZE = "widget_info_size"
     const val DEFAULT_ADVANCE_MINUTES = 15
 
     fun getAdvanceMinutes(context: Context): Int {
@@ -103,7 +104,7 @@ object SettingsStore {
 
     fun setWidgetTimeSize(context: Context, size: Int) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .edit().putInt(KEY_WIDGET_TIME_SIZE, size.coerceIn(30, 80)).apply()
+            .edit().putInt(KEY_WIDGET_TIME_SIZE, size).apply()
     }
 
     fun getWidgetTimeWeight(context: Context): Int {
@@ -184,5 +185,15 @@ object SettingsStore {
     fun setWidgetTopPadding(context: Context, dp: Int) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit().putInt(KEY_WIDGET_TOP_PADDING, dp).apply()
+    }
+
+    fun getWidgetInfoSize(context: Context): Int {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getInt(KEY_WIDGET_INFO_SIZE, 14)
+    }
+
+    fun setWidgetInfoSize(context: Context, size: Int) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit().putInt(KEY_WIDGET_INFO_SIZE, size).apply()
     }
 }

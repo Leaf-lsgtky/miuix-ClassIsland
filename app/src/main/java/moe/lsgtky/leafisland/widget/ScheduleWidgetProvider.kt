@@ -58,6 +58,7 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
             scaledDensity: Float,
             timeSize: Int,
             timeWeight: Int,
+            infoSize: Int,
             infoWeight: Int,
             textColor: Int,
             infoAbove: Boolean,
@@ -78,7 +79,7 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
                 letterSpacing = 0.02f
             }
 
-            val infoSizePx = 14f * scaledDensity
+            val infoSizePx = infoSize * scaledDensity
             val infoPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = textColor
                 textSize = infoSizePx
@@ -199,6 +200,7 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
         val timeSize = SettingsStore.getWidgetTimeSize(context)
         val timeWeight = SettingsStore.getWidgetTimeWeight(context)
         val infoWeight = SettingsStore.getWidgetInfoWeight(context)
+        val infoSize = SettingsStore.getWidgetInfoSize(context)
         val textColorStr = SettingsStore.getWidgetTextColor(context)
         val textColor = try { Color.parseColor(textColorStr) } catch (_: Exception) { Color.WHITE }
         val infoAbove = SettingsStore.getWidgetInfoAbove(context)
@@ -215,7 +217,7 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
 
         val bitmap = renderBitmap(
             widthPx, heightPx, density, dm.scaledDensity,
-            timeSize, timeWeight, infoWeight, textColor,
+            timeSize, timeWeight, infoSize, infoWeight, textColor,
             infoAbove, infoSpacing, topPadding, timeStr, infoText,
         )
         views.setImageViewBitmap(R.id.widget_canvas, bitmap)

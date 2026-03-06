@@ -72,6 +72,7 @@ fun WidgetSettingsScreen(
     var textColor by remember { mutableStateOf(SettingsStore.getWidgetTextColor(context)) }
     var courseChars by remember { mutableIntStateOf(SettingsStore.getWidgetCourseChars(context)) }
     var advanceMin by remember { mutableIntStateOf(SettingsStore.getWidgetAdvanceMinutes(context)) }
+    var infoSize by remember { mutableIntStateOf(SettingsStore.getWidgetInfoSize(context)) }
     var infoWeight by remember { mutableIntStateOf(SettingsStore.getWidgetInfoWeight(context)) }
     var infoAbove by remember { mutableStateOf(SettingsStore.getWidgetInfoAbove(context)) }
     var infoSpacing by remember { mutableIntStateOf(SettingsStore.getWidgetInfoSpacing(context)) }
@@ -84,9 +85,11 @@ fun WidgetSettingsScreen(
     val showAdvanceDialog = remember { mutableStateOf(false) }
     val showSpacingDialog = remember { mutableStateOf(false) }
     val showTopPaddingDialog = remember { mutableStateOf(false) }
+    val showInfoSizeDialog = remember { mutableStateOf(false) }
 
     // --- Slider/input temps ---
-    var timeSizeSlider by remember { mutableFloatStateOf(timeSize.toFloat()) }
+    var timeSizeInput by remember { mutableStateOf(timeSize.toString()) }
+    var infoSizeInput by remember { mutableStateOf(infoSize.toString()) }
     var charsSlider by remember { mutableFloatStateOf(courseChars.toFloat()) }
     var advanceSlider by remember { mutableFloatStateOf(advanceMin.toFloat()) }
     var spacingInput by remember { mutableStateOf(infoSpacing.toString()) }
@@ -104,7 +107,7 @@ fun WidgetSettingsScreen(
     // --- Preview bitmap ---
     val dm = context.resources.displayMetrics
     val previewColor = try { AndroidColor.parseColor(textColor) } catch (_: Exception) { AndroidColor.WHITE }
-    val previewBitmap = remember(timeSize, timeWeight, infoWeight, textColor, infoAbove, infoSpacing, topPadding) {
+    val previewBitmap = remember(timeSize, timeWeight, infoSize, infoWeight, textColor, infoAbove, infoSpacing, topPadding) {
         val w = (300 * dm.density).toInt()
         val h = (120 * dm.density).toInt()
         val now = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"))
@@ -112,7 +115,7 @@ fun WidgetSettingsScreen(
         val info = "${today.monthValue}月${today.dayOfMonth}日 · 预览文本"
         ScheduleWidgetProvider.renderBitmap(
             w, h, dm.density, dm.scaledDensity,
-            timeSize, timeWeight, infoWeight, previewColor,
+            timeSize, timeWeight, infoSize, infoWeight, previewColor,
             infoAbove, infoSpacing, topPadding, now, info,
         )
     }
@@ -176,7 +179,7 @@ fun WidgetSettingsScreen(
                         title = "时间字号",
                         summary = "${timeSize}sp",
                         onClick = {
-                            timeSizeSlider = timeSize.toFloat()
+                            timeSizeInput = timeSize.toString()
                             showTimeSizeDialog.value = true
                         },
                     )
@@ -209,6 +212,14 @@ fun WidgetSettingsScreen(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp).padding(bottom = 6.dp),
                     insideMargin = PaddingValues(0.dp),
                 ) {
+                    SuperArrow(
+                        title = "副文本字号",
+                        summary = "${infoSize}sp",
+                        onClick = {
+                            infoSizeInput = infoSize.toString()
+                            showInfoSizeDialog.value = true
+                        },
+                    )
                     SuperDropdown(
                         title = "副文本粗细",
                         items = weightOptions,
@@ -277,17 +288,31 @@ fun WidgetSettingsScreen(
         // --- Dialogs ---
 
         // Time size
-        SliderDialog(
+        InputDialog(
             show = showTimeSizeDialog,
             title = "时间字号",
-            value = timeSizeSlider,
-            onValueChange = { timeSizeSlider = it },
-            valueRange = 30f..80f,
-            valueLabel = { "${it.toInt()}sp" },
+            value = timeSizeInput,
+            onValueChange = { timeSizeInput = it },
+            suffix = "sp（默认 56）",
             onConfirm = {
-                val v = timeSizeSlider.toInt()
+                val v = timeSizeInput.toIntOrNull() ?: timeSize
                 SettingsStore.setWidgetTimeSize(context, v)
                 timeSize = v
+                refresh()
+            },
+        )
+
+        // Info size
+        InputDialog(
+            show = showInfoSizeDialog,
+            title = "副文本字号",
+            value = infoSizeInput,
+            onValueChange = { infoSizeInput = it },
+            suffix = "sp（默认 14）",
+            onConfirm = {
+                val v = infoSizeInput.toIntOrNull() ?: infoSize
+                SettingsStore.setWidgetInfoSize(context, v)
+                infoSize = v
                 refresh()
             },
         )
