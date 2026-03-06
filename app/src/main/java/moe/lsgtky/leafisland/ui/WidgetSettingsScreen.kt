@@ -484,9 +484,7 @@ private fun InputDialog(
         Column(modifier = Modifier.fillMaxWidth()) {
             TextField(
                 value = value,
-                onValueChange = { input ->
-                    onValueChange(input.filter { it.isDigit() || it == '-' })
-                },
+                onValueChange = onValueChange,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 label = suffix,
                 modifier = Modifier.fillMaxWidth(),
