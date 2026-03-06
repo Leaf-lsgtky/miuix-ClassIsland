@@ -1,5 +1,5 @@
-# Keep widget provider (referenced by class name in AndroidManifest.xml)
--keep class moe.lsgtky.leafisland.widget.ScheduleWidgetProvider { *; }
+# Keep all app classes (widget uses reflection and cross-package references)
+-keep class moe.lsgtky.leafisland.** { *; }
 
-# Keep SettingsStore (used by widget provider via SharedPreferences keys)
--keep class moe.lsgtky.leafisland.util.SettingsStore { *; }
+# Keep tyme library (used by widget for lunar calendar)
+-keep class com.tyme.** { *; }
