@@ -15,10 +15,12 @@ import android.graphics.Typeface
 import android.os.Build
 import android.os.Bundle
 import android.os.SystemClock
+import android.provider.AlarmClock
 import android.util.Log
 import android.util.TypedValue
 import android.widget.RemoteViews
 import com.tyme.solar.SolarDay
+import moe.lsgtky.leafisland.MainActivity
 import moe.lsgtky.leafisland.R
 import moe.lsgtky.leafisland.data.IcsParser
 import moe.lsgtky.leafisland.util.SettingsStore
@@ -44,6 +46,77 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
             val ids = mgr.getAppWidgetIds(ComponentName(context, ScheduleWidgetProvider::class.java))
             intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
             context.sendBroadcast(intent)
+        }
+
+        /**
+         * Render widget content as a Bitmap. Shared by widget and settings preview.
+         */
+        fun renderBitmap(
+            widthPx: Int,
+            heightPx: Int,
+            density: Float,
+            scaledDensity: Float,
+            timeSize: Int,
+            timeWeight: Int,
+            infoWeight: Int,
+            textColor: Int,
+            infoAbove: Boolean,
+            infoSpacing: Int,
+            topPadding: Int,
+            timeStr: String,
+            infoText: String,
+        ): Bitmap {
+            val bitmap = Bitmap.createBitmap(widthPx, heightPx, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bitmap)
+
+            val timeSizePx = timeSize * scaledDensity
+            val timePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = textColor
+                textSize = timeSizePx
+                typeface = createTypeface(timeWeight)
+                textAlign = Paint.Align.CENTER
+                letterSpacing = 0.02f
+            }
+
+            val infoSizePx = 14f * scaledDensity
+            val infoPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = textColor
+                textSize = infoSizePx
+                typeface = createTypeface(infoWeight)
+                textAlign = Paint.Align.CENTER
+            }
+
+            val timeAscent = -timePaint.fontMetrics.ascent
+            val timeDescent = timePaint.fontMetrics.descent
+            val timeH = timeAscent + timeDescent
+
+            val infoAscent = -infoPaint.fontMetrics.ascent
+            val infoH = infoAscent + infoPaint.fontMetrics.descent
+
+            val spacingPx = infoSpacing * density
+            val topPaddingPx = topPadding * density
+            val totalH = timeH + spacingPx + infoH
+
+            val cx = widthPx / 2f
+            val baseY = (heightPx - totalH) / 2f + topPaddingPx
+
+            if (infoAbove) {
+                canvas.drawText(infoText, cx, baseY + infoAscent, infoPaint)
+                canvas.drawText(timeStr, cx, baseY + infoH + spacingPx + timeAscent, timePaint)
+            } else {
+                canvas.drawText(timeStr, cx, baseY + timeAscent, timePaint)
+                canvas.drawText(infoText, cx, baseY + timeH + spacingPx + infoAscent, infoPaint)
+            }
+
+            return bitmap
+        }
+
+        private fun createTypeface(weight: Int): Typeface {
+            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                Typeface.create(null as Typeface?, weight, false)
+            } else {
+                if (weight >= 600) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
+            }
         }
     }
 
@@ -118,13 +191,11 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
         val dm = context.resources.displayMetrics
         val density = dm.density
 
-        // Widget size in dp → px
         val widthDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH, 300)
         val heightDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 120)
         val widthPx = (widthDp * density).toInt().coerceAtLeast(200)
         val heightPx = (heightDp * density).toInt().coerceAtLeast(80)
 
-        // Settings
         val timeSize = SettingsStore.getWidgetTimeSize(context)
         val timeWeight = SettingsStore.getWidgetTimeWeight(context)
         val infoWeight = SettingsStore.getWidgetInfoWeight(context)
@@ -134,25 +205,6 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
         val infoSpacing = SettingsStore.getWidgetInfoSpacing(context)
         val topPadding = SettingsStore.getWidgetTopPadding(context)
 
-        // Paints
-        val timeSizePx = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, timeSize.toFloat(), dm)
-        val timePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = textColor
-            textSize = timeSizePx
-            typeface = createTypeface(timeWeight)
-            textAlign = Paint.Align.CENTER
-            letterSpacing = 0.02f
-        }
-
-        val infoSizePx = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 14f, dm)
-        val infoPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = textColor
-            textSize = infoSizePx
-            typeface = createTypeface(infoWeight)
-            textAlign = Paint.Align.CENTER
-        }
-
-        // Text content
         val timeStr = LocalTime.now().format(HH_MM)
         val infoText = try {
             buildInfoLine(context)
@@ -161,45 +213,34 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
             "${today.monthValue}月${today.dayOfMonth}日"
         }
 
-        // Measure
-        val timeAscent = -timePaint.fontMetrics.ascent
-        val timeDescent = timePaint.fontMetrics.descent
-        val timeH = timeAscent + timeDescent
+        val bitmap = renderBitmap(
+            widthPx, heightPx, density, dm.scaledDensity,
+            timeSize, timeWeight, infoWeight, textColor,
+            infoAbove, infoSpacing, topPadding, timeStr, infoText,
+        )
+        views.setImageViewBitmap(R.id.widget_canvas, bitmap)
 
-        val infoAscent = -infoPaint.fontMetrics.ascent
-        val infoDescent = infoPaint.fontMetrics.descent
-        val infoH = infoAscent + infoDescent
-
-        val spacingPx = infoSpacing * density
-        val topPaddingPx = topPadding * density
-        val totalH = timeH + spacingPx + infoH
-
-        // Bitmap
-        val bitmap = Bitmap.createBitmap(widthPx, heightPx, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        val cx = widthPx / 2f
-        val baseY = (heightPx - totalH) / 2f + topPaddingPx
+        // Click: top area → clock app, bottom area → our app (swap if infoAbove)
+        val clockIntent = PendingIntent.getActivity(
+            context, 0,
+            Intent(AlarmClock.ACTION_SHOW_ALARMS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        val appIntent = PendingIntent.getActivity(
+            context, 1,
+            Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
 
         if (infoAbove) {
-            // Info first, then time
-            canvas.drawText(infoText, cx, baseY + infoAscent, infoPaint)
-            canvas.drawText(timeStr, cx, baseY + infoH + spacingPx + timeAscent, timePaint)
+            views.setOnClickPendingIntent(R.id.widget_click_top, appIntent)
+            views.setOnClickPendingIntent(R.id.widget_click_bottom, clockIntent)
         } else {
-            // Time first, then info
-            canvas.drawText(timeStr, cx, baseY + timeAscent, timePaint)
-            canvas.drawText(infoText, cx, baseY + timeH + spacingPx + infoAscent, infoPaint)
+            views.setOnClickPendingIntent(R.id.widget_click_top, clockIntent)
+            views.setOnClickPendingIntent(R.id.widget_click_bottom, appIntent)
         }
 
-        views.setImageViewBitmap(R.id.widget_canvas, bitmap)
         return views
-    }
-
-    private fun createTypeface(weight: Int): Typeface {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            Typeface.create(null as Typeface?, weight, false)
-        } else {
-            if (weight >= 600) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
-        }
     }
 
     private fun buildInfoLine(context: Context): String {

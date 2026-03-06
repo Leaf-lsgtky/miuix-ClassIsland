@@ -1,15 +1,19 @@
 package moe.lsgtky.leafisland.ui
 
+import android.graphics.Color as AndroidColor
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -18,13 +22,19 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import moe.lsgtky.leafisland.util.SettingsStore
 import moe.lsgtky.leafisland.widget.ScheduleWidgetProvider
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.ColorPalette
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -42,6 +52,9 @@ import top.yukonga.miuix.kmp.extra.SuperDropdown
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.utils.overScrollVertical
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun WidgetSettingsScreen(
@@ -69,13 +82,12 @@ fun WidgetSettingsScreen(
     val showSpacingDialog = remember { mutableStateOf(false) }
     val showTopPaddingDialog = remember { mutableStateOf(false) }
 
-    // --- Slider temps ---
+    // --- Slider/input temps ---
     var timeSizeSlider by remember { mutableFloatStateOf(timeSize.toFloat()) }
     var charsSlider by remember { mutableFloatStateOf(courseChars.toFloat()) }
     var advanceSlider by remember { mutableFloatStateOf(advanceMin.toFloat()) }
-    var spacingSlider by remember { mutableFloatStateOf(infoSpacing.toFloat()) }
-    var topPaddingSlider by remember { mutableFloatStateOf(topPadding.toFloat()) }
-    var colorInput by remember { mutableStateOf(textColor) }
+    var spacingInput by remember { mutableStateOf(infoSpacing.toString()) }
+    var topPaddingInput by remember { mutableStateOf(topPadding.toString()) }
 
     // --- Dropdown data ---
     val weightOptions = listOf("Regular (400)", "Medium (500)", "SemiBold (600)", "Bold (700)", "ExtraBold (800)", "Black (900)")
@@ -85,6 +97,22 @@ fun WidgetSettingsScreen(
     fun weightToIndex(w: Int) = weightValues.indexOf(w).coerceAtLeast(0)
 
     fun refresh() = ScheduleWidgetProvider.triggerUpdate(context)
+
+    // --- Preview bitmap ---
+    val dm = context.resources.displayMetrics
+    val previewColor = try { AndroidColor.parseColor(textColor) } catch (_: Exception) { AndroidColor.WHITE }
+    val previewBitmap = remember(timeSize, timeWeight, infoWeight, textColor, infoAbove, infoSpacing, topPadding) {
+        val w = (300 * dm.density).toInt()
+        val h = (120 * dm.density).toInt()
+        val now = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"))
+        val today = LocalDate.now()
+        val info = "${today.monthValue}月${today.dayOfMonth}日 · 预览文本"
+        ScheduleWidgetProvider.renderBitmap(
+            w, h, dm.density, dm.scaledDensity,
+            timeSize, timeWeight, infoWeight, previewColor,
+            infoAbove, infoSpacing, topPadding, now, info,
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -112,6 +140,26 @@ fun WidgetSettingsScreen(
                 .overScrollVertical()
                 .nestedScroll(scrollBehavior.nestedScrollConnection),
         ) {
+            // --- 预览 ---
+            item { SmallTitle(text = "预览") }
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp)
+                        .padding(bottom = 6.dp),
+                ) {
+                    Image(
+                        bitmap = previewBitmap.asImageBitmap(),
+                        contentDescription = "小部件预览",
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(300f / 120f),
+                    )
+                }
+            }
+
             // --- 时钟 ---
             item { SmallTitle(text = "时钟") }
             item {
@@ -142,7 +190,7 @@ fun WidgetSettingsScreen(
                         title = "时钟上间距",
                         summary = "${topPadding}dp",
                         onClick = {
-                            topPaddingSlider = topPadding.toFloat()
+                            topPaddingInput = topPadding.toString()
                             showTopPaddingDialog.value = true
                         },
                     )
@@ -182,7 +230,7 @@ fun WidgetSettingsScreen(
                         title = "副文本与时钟间距",
                         summary = "${infoSpacing}dp",
                         onClick = {
-                            spacingSlider = infoSpacing.toFloat()
+                            spacingInput = infoSpacing.toString()
                             showSpacingDialog.value = true
                         },
                     )
@@ -215,10 +263,7 @@ fun WidgetSettingsScreen(
                     SuperArrow(
                         title = "文字颜色",
                         summary = textColor,
-                        onClick = {
-                            colorInput = textColor
-                            showColorDialog.value = true
-                        },
+                        onClick = { showColorDialog.value = true },
                     )
                 }
             }
@@ -242,32 +287,30 @@ fun WidgetSettingsScreen(
             },
         )
 
-        // Top padding
-        SliderDialog(
+        // Top padding (text input, no bounds)
+        InputDialog(
             show = showTopPaddingDialog,
             title = "时钟上间距",
-            value = topPaddingSlider,
-            onValueChange = { topPaddingSlider = it },
-            valueRange = -10f..50f,
-            valueLabel = { "${it.toInt()}dp" },
+            value = topPaddingInput,
+            onValueChange = { topPaddingInput = it },
+            suffix = "dp",
             onConfirm = {
-                val v = topPaddingSlider.toInt()
+                val v = topPaddingInput.toIntOrNull() ?: topPadding
                 SettingsStore.setWidgetTopPadding(context, v)
                 topPadding = v
                 refresh()
             },
         )
 
-        // Spacing
-        SliderDialog(
+        // Spacing (text input, no bounds)
+        InputDialog(
             show = showSpacingDialog,
             title = "副文本与时钟间距",
-            value = spacingSlider,
-            onValueChange = { spacingSlider = it },
-            valueRange = -10f..30f,
-            valueLabel = { "${it.toInt()}dp" },
+            value = spacingInput,
+            onValueChange = { spacingInput = it },
+            suffix = "dp",
             onConfirm = {
-                val v = spacingSlider.toInt()
+                val v = spacingInput.toIntOrNull() ?: infoSpacing
                 SettingsStore.setWidgetInfoSpacing(context, v)
                 infoSpacing = v
                 refresh()
@@ -306,17 +349,21 @@ fun WidgetSettingsScreen(
             },
         )
 
-        // Color
+        // Color palette
         SuperDialog(
             show = showColorDialog,
             title = "文字颜色",
             onDismissRequest = { showColorDialog.value = false },
         ) {
+            var selectedColor by remember(textColor) {
+                mutableStateOf(
+                    try { Color(AndroidColor.parseColor(textColor)) } catch (_: Exception) { Color.White }
+                )
+            }
             Column(modifier = Modifier.fillMaxWidth()) {
-                TextField(
-                    value = colorInput,
-                    onValueChange = { colorInput = it },
-                    label = "十六进制颜色 (如 #FFFFFF)",
+                ColorPalette(
+                    color = selectedColor,
+                    onColorChanged = { selectedColor = it },
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(modifier = Modifier.height(16.dp))
@@ -330,9 +377,9 @@ fun WidgetSettingsScreen(
                     TextButton(
                         text = "确定",
                         onClick = {
-                            val c = colorInput.trim()
-                            SettingsStore.setWidgetTextColor(context, c)
-                            textColor = c
+                            val hex = String.format("#%08X", selectedColor.toArgb())
+                            SettingsStore.setWidgetTextColor(context, hex)
+                            textColor = hex
                             showColorDialog.value = false
                             refresh()
                         },
@@ -366,6 +413,52 @@ private fun SliderDialog(
                 value = value,
                 onValueChange = onValueChange,
                 valueRange = valueRange,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(modifier = Modifier.fillMaxWidth()) {
+                TextButton(
+                    text = "取消",
+                    onClick = { show.value = false },
+                    modifier = Modifier.weight(1f),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                TextButton(
+                    text = "确定",
+                    onClick = {
+                        onConfirm()
+                        show.value = false
+                    },
+                    colors = ButtonDefaults.textButtonColorsPrimary(),
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun InputDialog(
+    show: androidx.compose.runtime.MutableState<Boolean>,
+    title: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    suffix: String,
+    onConfirm: () -> Unit,
+) {
+    SuperDialog(
+        show = show,
+        title = title,
+        onDismissRequest = { show.value = false },
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            TextField(
+                value = value,
+                onValueChange = { input ->
+                    onValueChange(input.filter { it.isDigit() || it == '-' })
+                },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                label = suffix,
                 modifier = Modifier.fillMaxWidth(),
             )
             Spacer(modifier = Modifier.height(16.dp))
