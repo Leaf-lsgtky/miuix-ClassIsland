@@ -482,11 +482,12 @@ private fun InputDialog(
         onDismissRequest = { show.value = false },
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
+            Text(text = suffix)
+            Spacer(modifier = Modifier.height(8.dp))
             TextField(
                 value = value,
                 onValueChange = onValueChange,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                label = suffix,
                 modifier = Modifier.fillMaxWidth(),
             )
             Spacer(modifier = Modifier.height(16.dp))
