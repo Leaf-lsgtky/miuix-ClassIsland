@@ -126,6 +126,7 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray,
     ) {
+        scheduleMinuteAlarm(context)
         for (id in appWidgetIds) {
             updateWidget(context, appWidgetManager, id)
         }
