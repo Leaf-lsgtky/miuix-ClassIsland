@@ -31,7 +31,9 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import moe.lsgtky.leafisland.util.SettingsStore
 import moe.lsgtky.leafisland.widget.ScheduleWidgetProvider
@@ -481,13 +483,18 @@ private fun InputDialog(
         title = title,
         onDismissRequest = { show.value = false },
     ) {
+        var tfv by remember(value) {
+            mutableStateOf(TextFieldValue(value, TextRange(value.length)))
+        }
         Column(modifier = Modifier.fillMaxWidth()) {
-            Text(text = suffix)
-            Spacer(modifier = Modifier.height(8.dp))
             TextField(
-                value = value,
-                onValueChange = onValueChange,
+                value = tfv,
+                onValueChange = {
+                    tfv = it
+                    onValueChange(it.text)
+                },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                label = suffix,
                 modifier = Modifier.fillMaxWidth(),
             )
             Spacer(modifier = Modifier.height(16.dp))
