@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -126,10 +126,10 @@ fun ScheduleScreen(
                         }
                     }
                 } else {
-                    items(
+                    itemsIndexed(
                         items = todayCourses,
-                        key = { "today_${it.summary}_${it.startTime}" },
-                    ) { course ->
+                        key = { index, course -> "today_${index}_${course.summary}_${course.startTime}" },
+                    ) { _, course ->
                         CourseCard(course)
                     }
                 }
@@ -151,10 +151,10 @@ fun ScheduleScreen(
                         }
                     }
                 } else {
-                    items(
+                    itemsIndexed(
                         items = tomorrowCourses,
-                        key = { "tomorrow_${it.summary}_${it.startTime}" },
-                    ) { course ->
+                        key = { index, course -> "tomorrow_${index}_${course.summary}_${course.startTime}" },
+                    ) { _, course ->
                         CourseCard(course)
                     }
                 }
