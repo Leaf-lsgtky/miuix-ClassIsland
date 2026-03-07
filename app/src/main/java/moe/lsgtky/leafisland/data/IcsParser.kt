@@ -18,7 +18,7 @@ object IcsParser {
         val summary: String,
         val dtStart: LocalDateTime,
         val dtEnd: LocalDateTime,
-        val rruleUntil: LocalDate?,
+        val rruleUntil: LocalDateTime?,
         val rruleInterval: Int,
         val location: String,
         val description: String,
@@ -47,7 +47,7 @@ object IcsParser {
         var summary = ""
         var dtStart: LocalDateTime? = null
         var dtEnd: LocalDateTime? = null
-        var rruleUntil: LocalDate? = null
+        var rruleUntil: LocalDateTime? = null
         var rruleInterval = 1
         var location = ""
         var description = ""
@@ -97,7 +97,7 @@ object IcsParser {
                         if (kv.size == 2) kv[0] to kv[1] else null
                     }.toMap()
                     parts["UNTIL"]?.let {
-                        rruleUntil = parseUntilDate(it)
+                        rruleUntil = parseUntilDateTime(it)
                     }
                     parts["INTERVAL"]?.let {
                         rruleInterval = it.toIntOrNull() ?: 1
@@ -140,16 +140,16 @@ object IcsParser {
         }
     }
 
-    private fun parseUntilDate(until: String): LocalDate? {
+    private fun parseUntilDateTime(until: String): LocalDateTime? {
         return try {
             if (until.endsWith("Z")) {
                 val zdt = ZonedDateTime.parse(
                     until,
                     DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'").withZone(ZoneId.of("UTC"))
                 )
-                zdt.withZoneSameInstant(ZoneId.of("Asia/Shanghai")).toLocalDate()
+                zdt.withZoneSameInstant(ZoneId.of("Asia/Shanghai")).toLocalDateTime()
             } else {
-                LocalDate.parse(until.substring(0, 8), DateTimeFormatter.ofPattern("yyyyMMdd"))
+                LocalDateTime.parse(until.substring(0, 15), DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss"))
             }
         } catch (_: Exception) {
             null
@@ -161,7 +161,10 @@ object IcsParser {
 
         if (targetDate.isBefore(eventDate)) return false
 
-        if (event.rruleUntil != null && targetDate.isAfter(event.rruleUntil)) return false
+        if (event.rruleUntil != null) {
+            val occurrenceStart = targetDate.atTime(event.dtStart.toLocalTime())
+            if (occurrenceStart.isAfter(event.rruleUntil)) return false
+        }
 
         if (targetDate.dayOfWeek != eventDate.dayOfWeek) return false
 
