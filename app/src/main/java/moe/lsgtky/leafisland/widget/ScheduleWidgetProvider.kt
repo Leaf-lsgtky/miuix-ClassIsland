@@ -331,7 +331,7 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
         // 下一分钟整点触发
         val now = System.currentTimeMillis()
         val nextMinute = (now / 60_000 + 1) * 60_000
-        alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, nextMinute, pi)
+        alarmManager.setAndAllowWhileIdle(AlarmManager.RTC, nextMinute, pi)
     }
 
     private fun cancelNextMinuteAlarm(context: Context) {
