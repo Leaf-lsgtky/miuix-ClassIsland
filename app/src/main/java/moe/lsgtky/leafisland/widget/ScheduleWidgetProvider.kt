@@ -14,7 +14,6 @@ import android.graphics.Paint
 import android.graphics.Typeface
 import android.os.Build
 import android.os.Bundle
-import android.os.SystemClock
 import android.provider.AlarmClock
 import android.util.Log
 import android.util.TypedValue
@@ -126,7 +125,7 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray,
     ) {
-        scheduleMinuteAlarm(context)
+        scheduleNextMinuteAlarm(context)
         for (id in appWidgetIds) {
             updateWidget(context, appWidgetManager, id)
         }
@@ -150,17 +149,18 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
             for (id in ids) {
                 updateWidget(context, mgr, id)
             }
+            scheduleNextMinuteAlarm(context)
         }
     }
 
     override fun onEnabled(context: Context) {
         super.onEnabled(context)
-        scheduleMinuteAlarm(context)
+        scheduleNextMinuteAlarm(context)
     }
 
     override fun onDisabled(context: Context) {
         super.onDisabled(context)
-        cancelMinuteAlarm(context)
+        cancelNextMinuteAlarm(context)
     }
 
     private fun updateWidget(context: Context, appWidgetManager: AppWidgetManager, id: Int) {
@@ -319,7 +319,7 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
         } catch (_: Exception) { }
     }
 
-    private fun scheduleMinuteAlarm(context: Context) {
+    private fun scheduleNextMinuteAlarm(context: Context) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val intent = Intent(context, ScheduleWidgetProvider::class.java).apply {
             action = ACTION_WIDGET_UPDATE
@@ -328,15 +328,13 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
             context, ALARM_REQUEST_CODE, intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
-        alarmManager.setRepeating(
-            AlarmManager.ELAPSED_REALTIME,
-            SystemClock.elapsedRealtime() + 60_000,
-            60_000,
-            pi,
-        )
+        // 下一分钟整点触发
+        val now = System.currentTimeMillis()
+        val nextMinute = (now / 60_000 + 1) * 60_000
+        alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, nextMinute, pi)
     }
 
-    private fun cancelMinuteAlarm(context: Context) {
+    private fun cancelNextMinuteAlarm(context: Context) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val intent = Intent(context, ScheduleWidgetProvider::class.java).apply {
             action = ACTION_WIDGET_UPDATE
