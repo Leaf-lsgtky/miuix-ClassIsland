@@ -20,6 +20,7 @@ object SettingsStore {
     private const val KEY_WIDGET_INFO_SPACING = "widget_info_spacing"
     private const val KEY_WIDGET_TOP_PADDING = "widget_top_padding"
     private const val KEY_WIDGET_INFO_SIZE = "widget_info_size"
+    private const val KEY_SHIZUKU_ENABLED = "shizuku_enabled"
     const val DEFAULT_ADVANCE_MINUTES = 15
 
     fun getAdvanceMinutes(context: Context): Int {
@@ -195,5 +196,15 @@ object SettingsStore {
     fun setWidgetInfoSize(context: Context, size: Int) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit().putInt(KEY_WIDGET_INFO_SIZE, size).apply()
+    }
+
+    fun isShizukuEnabled(context: Context): Boolean {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getBoolean(KEY_SHIZUKU_ENABLED, false)
+    }
+
+    fun setShizukuEnabled(context: Context, enabled: Boolean) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit().putBoolean(KEY_SHIZUKU_ENABLED, enabled).apply()
     }
 }

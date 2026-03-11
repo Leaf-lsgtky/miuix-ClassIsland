@@ -5,14 +5,18 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
 import moe.lsgtky.leafisland.MainActivity
 import moe.lsgtky.leafisland.R
 import moe.lsgtky.leafisland.data.CourseEvent
+import moe.lsgtky.leafisland.shizuku.ShizukuHelper
 import moe.lsgtky.leafisland.util.LocationFormatter
+import moe.lsgtky.leafisland.util.SettingsStore
 import org.json.JSONObject
 import java.time.format.DateTimeFormatter
 
@@ -21,6 +25,9 @@ object NotificationHelper {
     const val CHANNEL_ID = "course_reminders"
     const val NOTIFICATION_ID = 1001
     private const val CHANNEL_NAME = "课程提醒"
+    private const val TAG = "NotificationHelper"
+    private const val XMSF_PACKAGE = "com.xiaomi.xmsf"
+    private const val BLIND_WINDOW_MS = 100L
     private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 
     fun createNotificationChannel(context: Context) {
@@ -64,12 +71,49 @@ object NotificationHelper {
             }
 
         val manager = context.getSystemService(NotificationManager::class.java)
-        manager.notify(NOTIFICATION_ID, notification)
+        notifyWithBypass(context, manager, NOTIFICATION_ID, notification)
     }
 
     fun cancelAllNotifications(context: Context) {
         val manager = context.getSystemService(NotificationManager::class.java)
         manager.cancelAll()
+    }
+
+    private fun notifyWithBypass(
+        context: Context,
+        manager: NotificationManager,
+        notificationId: Int,
+        notification: android.app.Notification,
+    ) {
+        val useShizuku = SettingsStore.isShizukuEnabled(context)
+        if (!useShizuku || !ShizukuHelper.isAvailable() || !ShizukuHelper.hasPermission()) {
+            manager.notify(notificationId, notification)
+            return
+        }
+
+        val xmsfUid = try {
+            context.packageManager.getPackageUid(XMSF_PACKAGE, PackageManager.PackageInfoFlags.of(0))
+        } catch (_: PackageManager.NameNotFoundException) {
+            manager.notify(notificationId, notification)
+            return
+        }
+
+        Thread {
+            try {
+                ShizukuHelper.withBlockerService { blocker ->
+                    blocker.blockNetwork(xmsfUid)
+                    try {
+                        manager.notify(notificationId, notification)
+                        Thread.sleep(BLIND_WINDOW_MS)
+                    } finally {
+                        blocker.unblockNetwork(xmsfUid)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Shizuku bypass failed, falling back to normal notify", e)
+                manager.notify(notificationId, notification)
+            }
+        }.start()
     }
 
     private fun buildFocusBundle(

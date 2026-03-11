@@ -8,6 +8,7 @@ activity-compose = "1.10.1"
 core-ktx = "1.16.0"
 lifecycle = "2.9.0"
 tyme4kt = "1.4.3"
+shizuku = "13.1.5"
 
 [libraries]
 compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "compose-bom" }
@@ -26,6 +27,8 @@ miuix-icons = { group = "top.yukonga.miuix.kmp", name = "miuix-icons-android", v
 miuix-navigation3 = { group = "top.yukonga.miuix.kmp", name = "miuix-navigation3-ui-android", version.ref = "miuix" }
 navigation3-runtime = { group = "androidx.navigation3", name = "navigation3-runtime", version.ref = "navigation3" }
 tyme4kt = { group = "cn.6tail", name = "tyme4kt", version.ref = "tyme4kt" }
+shizuku-api = { group = "dev.rikka.shizuku", name = "api", version.ref = "shizuku" }
+shizuku-provider = { group = "dev.rikka.shizuku", name = "provider", version.ref = "shizuku" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

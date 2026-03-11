@@ -32,6 +32,7 @@ import moe.lsgtky.leafisland.data.IcsParser
 import moe.lsgtky.leafisland.data.ScheduledPush
 import moe.lsgtky.leafisland.notification.AlarmScheduler
 import moe.lsgtky.leafisland.notification.NotificationHelper
+import moe.lsgtky.leafisland.shizuku.ShizukuHelper
 import moe.lsgtky.leafisland.util.SettingsStore
 import java.time.LocalDate
 import java.time.LocalTime
@@ -50,6 +51,7 @@ import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.basic.rememberTopAppBarState
 import top.yukonga.miuix.kmp.extra.SuperArrow
 import top.yukonga.miuix.kmp.extra.SuperDialog
+import top.yukonga.miuix.kmp.extra.SuperSwitch
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.utils.overScrollVertical
@@ -89,6 +91,9 @@ fun SettingsScreen(
     // --- Widget log state ---
     val showLogDialog = remember { mutableStateOf(false) }
     var logContent by remember { mutableStateOf("") }
+
+    // --- Shizuku state ---
+    var shizukuEnabled by remember { mutableStateOf(SettingsStore.isShizukuEnabled(context)) }
 
     Scaffold(
         topBar = {
@@ -156,6 +161,39 @@ fun SettingsScreen(
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp)
                             .padding(bottom = 12.dp),
+                    )
+                    SuperSwitch(
+                        title = "Shizuku 焦点通知",
+                        summary = if (shizukuEnabled) "已启用" else "使用 Shizuku 绕过焦点通知白名单",
+                        checked = shizukuEnabled,
+                        onCheckedChange = { checked ->
+                            if (checked) {
+                                if (!ShizukuHelper.isAvailable()) {
+                                    return@SuperSwitch
+                                }
+                                if (ShizukuHelper.hasPermission()) {
+                                    SettingsStore.setShizukuEnabled(context, true)
+                                    shizukuEnabled = true
+                                } else {
+                                    val code = (1000..9999).random()
+                                    val listener = object : rikka.shizuku.Shizuku.OnRequestPermissionResultListener {
+                                        override fun onRequestPermissionResult(requestCode: Int, grantResult: Int) {
+                                            if (requestCode != code) return
+                                            if (grantResult == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                                                SettingsStore.setShizukuEnabled(context, true)
+                                                shizukuEnabled = true
+                                            }
+                                            ShizukuHelper.removePermissionResultListener(this)
+                                        }
+                                    }
+                                    ShizukuHelper.addPermissionResultListener(listener)
+                                    ShizukuHelper.requestPermission(code)
+                                }
+                            } else {
+                                SettingsStore.setShizukuEnabled(context, false)
+                                shizukuEnabled = false
+                            }
+                        },
                     )
                     SuperArrow(
                         title = "通知测试",

@@ -50,6 +50,7 @@ android {
 
     buildFeatures {
         compose = true
+        aidl = true
     }
 }
 
@@ -69,5 +70,7 @@ dependencies {
     implementation(libs.miuix.navigation3)
     implementation(libs.navigation3.runtime)
     implementation(libs.tyme4kt)
+    implementation(libs.shizuku.api)
+    implementation(libs.shizuku.provider)
     debugImplementation(libs.compose.ui.tooling)
 }
