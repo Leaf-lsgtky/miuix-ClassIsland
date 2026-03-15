@@ -100,14 +100,12 @@ object NotificationHelper {
 
         Thread {
             try {
-                ShizukuHelper.withBlockerService { blocker ->
-                    blocker.blockNetwork(xmsfUid)
-                    try {
-                        manager.notify(notificationId, notification)
-                        Thread.sleep(BLIND_WINDOW_MS)
-                    } finally {
-                        blocker.unblockNetwork(xmsfUid)
-                    }
+                ShizukuHelper.blockNetwork(xmsfUid)
+                try {
+                    manager.notify(notificationId, notification)
+                    Thread.sleep(BLIND_WINDOW_MS)
+                } finally {
+                    ShizukuHelper.unblockNetwork(xmsfUid)
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Shizuku bypass failed, falling back to normal notify", e)

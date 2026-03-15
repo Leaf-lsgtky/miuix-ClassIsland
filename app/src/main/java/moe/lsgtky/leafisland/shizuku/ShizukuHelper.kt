@@ -1,11 +1,10 @@
 package moe.lsgtky.leafisland.shizuku
 
-import android.content.ComponentName
-import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.os.IBinder
-import moe.lsgtky.leafisland.INetworkBlockerService
 import rikka.shizuku.Shizuku
+import rikka.shizuku.ShizukuBinderWrapper
+import rikka.shizuku.SystemServiceHelper
 
 object ShizukuHelper {
 
@@ -34,41 +33,50 @@ object ShizukuHelper {
     }
 
     /**
-     * Bind the NetworkBlockerService, execute [block], then unbind.
-     * Must be called from a background thread.
+     * IConnectivityManager proxy obtained via [ShizukuBinderWrapper].
+     * All binder transactions are forwarded through Shizuku's privileged process,
+     * giving shell-level permissions without spawning a remote UserService.
+     *
+     * This mirrors InstallerX-Revived's "hook mode" approach.
      */
-    fun withBlockerService(block: (INetworkBlockerService) -> Unit) {
-        val latch = java.util.concurrent.CountDownLatch(1)
-        var service: INetworkBlockerService? = null
+    private val connectivityManager: Any by lazy {
+        val originalBinder = SystemServiceHelper.getSystemService("connectivity")
+        val wrapper = ShizukuBinderWrapper(originalBinder)
+        val stubClass = Class.forName("android.net.IConnectivityManager\$Stub")
+        stubClass.getMethod("asInterface", IBinder::class.java).invoke(null, wrapper)!!
+    }
 
-        val args = Shizuku.UserServiceArgs(
-            ComponentName(
-                "moe.lsgtky.leafisland",
-                NetworkBlockerService::class.java.name,
-            )
-        ).processNameSuffix("network_blocker")
+    /**
+     * Block network for [uid] via FIREWALL_CHAIN_OEM_DENY_3 (chain 9).
+     * Must have Shizuku permission.
+     */
+    fun blockNetwork(uid: Int) {
+        val cm = connectivityManager
+        // Enable the firewall chain
+        cm.javaClass.getMethod(
+            "setFirewallChainEnabled",
+            Int::class.javaPrimitiveType,
+            Boolean::class.javaPrimitiveType,
+        ).invoke(cm, 9, true)
+        // Apply DENY rule for this UID
+        cm.javaClass.getMethod(
+            "setUidFirewallRule",
+            Int::class.javaPrimitiveType,
+            Int::class.javaPrimitiveType,
+            Int::class.javaPrimitiveType,
+        ).invoke(cm, 9, uid, 2) // FIREWALL_RULE_DENY
+    }
 
-        val connection = object : ServiceConnection {
-            override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
-                service = INetworkBlockerService.Stub.asInterface(binder)
-                latch.countDown()
-            }
-
-            override fun onServiceDisconnected(name: ComponentName?) {
-                service = null
-            }
-        }
-
-        Shizuku.bindUserService(args, connection)
-
-        try {
-            latch.await(5, java.util.concurrent.TimeUnit.SECONDS)
-            val svc = service ?: throw IllegalStateException("Failed to bind NetworkBlockerService")
-            block(svc)
-        } finally {
-            try {
-                Shizuku.unbindUserService(args, connection, true)
-            } catch (_: Exception) { }
-        }
+    /**
+     * Unblock network for [uid] by resetting firewall rule to DEFAULT.
+     */
+    fun unblockNetwork(uid: Int) {
+        val cm = connectivityManager
+        cm.javaClass.getMethod(
+            "setUidFirewallRule",
+            Int::class.javaPrimitiveType,
+            Int::class.javaPrimitiveType,
+            Int::class.javaPrimitiveType,
+        ).invoke(cm, 9, uid, 0) // FIREWALL_RULE_DEFAULT
     }
 }
