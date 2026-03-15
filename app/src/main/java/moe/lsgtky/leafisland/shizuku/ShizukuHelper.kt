@@ -44,7 +44,7 @@ object ShizukuHelper {
             val binder = original.javaClass.getMethod("asBinder").invoke(original) as IBinder
             val wrapper = ShizukuBinderWrapper(binder)
             asInterface.invoke(null, wrapper)
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             Log.w(TAG, "Failed to wrap service $serviceName: ${e.message}")
             null
         }
@@ -58,7 +58,7 @@ object ShizukuHelper {
             true
         } catch (_: NoSuchMethodException) {
             false
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             Log.w(TAG, "$method failed: ${e.cause?.message ?: e.message}")
             false
         }
@@ -113,7 +113,7 @@ object ShizukuHelper {
             )
             Log.d(TAG, "Network BLOCKED for UID: $uid via iptables (exit=$exit)")
             return exit == 0
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             Log.w(TAG, "iptables block failed: ${e.message}")
         }
 
@@ -146,7 +146,7 @@ object ShizukuHelper {
                 "iptables -D OUTPUT -m owner --uid-owner $uid -j REJECT 2>/dev/null; true",
             )
             Log.d(TAG, "Network RESTORED for UID: $uid via iptables (exit=$exit)")
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             Log.w(TAG, "iptables unblock failed: ${e.message}")
         }
     }

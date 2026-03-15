@@ -65,10 +65,8 @@ object NotificationHelper {
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .addExtras(focusBundle)
             .build()
-            .also { notif ->
-                notif.extras.putAll(focusBundle)
-            }
 
         val manager = context.getSystemService(NotificationManager::class.java)
         notifyWithBypass(context, manager, NOTIFICATION_ID, notification)
@@ -102,19 +100,28 @@ object NotificationHelper {
 
         Log.d(TAG, "Starting Shizuku bypass for XMSF UID: $xmsfUid")
         Thread {
+            var blocked = false
             try {
-                ShizukuHelper.blockNetwork(xmsfUid)
-                try {
-                    manager.notify(notificationId, notification)
-                    Thread.sleep(BLIND_WINDOW_MS)
-                } finally {
-                    ShizukuHelper.unblockNetwork(xmsfUid)
-                }
-                Log.d(TAG, "Shizuku bypass completed successfully")
-            } catch (e: Exception) {
-                Log.e(TAG, "Shizuku bypass failed, falling back to normal notify", e)
-                manager.notify(notificationId, notification)
+                blocked = ShizukuHelper.blockNetwork(xmsfUid)
+                Log.d(TAG, "Network block result: $blocked")
+            } catch (e: Throwable) {
+                Log.w(TAG, "Network block failed: ${e.message}")
             }
+            try {
+                manager.notify(notificationId, notification)
+                if (blocked) Thread.sleep(BLIND_WINDOW_MS)
+            } catch (e: Throwable) {
+                Log.e(TAG, "Failed to post notification", e)
+            } finally {
+                if (blocked) {
+                    try {
+                        ShizukuHelper.unblockNetwork(xmsfUid)
+                    } catch (e: Throwable) {
+                        Log.w(TAG, "Network unblock failed: ${e.message}")
+                    }
+                }
+            }
+            Log.d(TAG, "Shizuku bypass completed (blocked=$blocked)")
         }.start()
     }
 
