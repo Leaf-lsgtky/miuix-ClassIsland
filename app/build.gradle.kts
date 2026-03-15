@@ -71,6 +71,5 @@ dependencies {
     implementation(libs.tyme4kt)
     implementation(libs.shizuku.api)
     implementation(libs.shizuku.provider)
-    compileOnly(project(":hidden-api"))
     debugImplementation(libs.compose.ui.tooling)
 }
