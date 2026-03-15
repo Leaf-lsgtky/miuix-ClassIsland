@@ -15,4 +15,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "ClassSchedule"
-include(":app")
+include(":app", ":hidden-api")

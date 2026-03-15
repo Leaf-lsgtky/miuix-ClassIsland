@@ -1,12 +1,15 @@
 package moe.lsgtky.leafisland.shizuku
 
 import android.content.pm.PackageManager
-import android.os.IBinder
+import android.net.IConnectivityManager
+import android.util.Log
 import rikka.shizuku.Shizuku
 import rikka.shizuku.ShizukuBinderWrapper
 import rikka.shizuku.SystemServiceHelper
 
 object ShizukuHelper {
+
+    private const val TAG = "ShizukuHelper"
 
     fun isAvailable(): Boolean = try {
         Shizuku.pingBinder()
@@ -39,11 +42,13 @@ object ShizukuHelper {
      *
      * This mirrors InstallerX-Revived's "hook mode" approach.
      */
-    private val connectivityManager: Any by lazy {
+    private val connectivityManager: IConnectivityManager by lazy {
         val originalBinder = SystemServiceHelper.getSystemService("connectivity")
-        val wrapper = ShizukuBinderWrapper(originalBinder)
-        val stubClass = Class.forName("android.net.IConnectivityManager\$Stub")
-        stubClass.getMethod("asInterface", IBinder::class.java).invoke(null, wrapper)!!
+        val originalCM = IConnectivityManager.Stub.asInterface(originalBinder)
+        val wrapper = ShizukuBinderWrapper(originalCM.asBinder())
+        IConnectivityManager.Stub.asInterface(wrapper).also {
+            Log.d(TAG, "Hooked IConnectivityManager created")
+        }
     }
 
     /**
@@ -52,19 +57,9 @@ object ShizukuHelper {
      */
     fun blockNetwork(uid: Int) {
         val cm = connectivityManager
-        // Enable the firewall chain
-        cm.javaClass.getMethod(
-            "setFirewallChainEnabled",
-            Int::class.javaPrimitiveType,
-            Boolean::class.javaPrimitiveType,
-        ).invoke(cm, 9, true)
-        // Apply DENY rule for this UID
-        cm.javaClass.getMethod(
-            "setUidFirewallRule",
-            Int::class.javaPrimitiveType,
-            Int::class.javaPrimitiveType,
-            Int::class.javaPrimitiveType,
-        ).invoke(cm, 9, uid, 2) // FIREWALL_RULE_DENY
+        cm.setFirewallChainEnabled(9, true)
+        cm.setUidFirewallRule(9, uid, 2) // FIREWALL_RULE_DENY
+        Log.d(TAG, "Network BLOCKED for UID: $uid")
     }
 
     /**
@@ -72,11 +67,7 @@ object ShizukuHelper {
      */
     fun unblockNetwork(uid: Int) {
         val cm = connectivityManager
-        cm.javaClass.getMethod(
-            "setUidFirewallRule",
-            Int::class.javaPrimitiveType,
-            Int::class.javaPrimitiveType,
-            Int::class.javaPrimitiveType,
-        ).invoke(cm, 9, uid, 0) // FIREWALL_RULE_DEFAULT
+        cm.setUidFirewallRule(9, uid, 0) // FIREWALL_RULE_DEFAULT
+        Log.d(TAG, "Network RESTORED for UID: $uid")
     }
 }

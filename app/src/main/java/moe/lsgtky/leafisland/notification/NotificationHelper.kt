@@ -87,6 +87,7 @@ object NotificationHelper {
     ) {
         val useShizuku = SettingsStore.isShizukuEnabled(context)
         if (!useShizuku || !ShizukuHelper.isAvailable() || !ShizukuHelper.hasPermission()) {
+            Log.d(TAG, "Shizuku bypass skipped: enabled=$useShizuku, available=${ShizukuHelper.isAvailable()}, permission=${ShizukuHelper.hasPermission()}")
             manager.notify(notificationId, notification)
             return
         }
@@ -94,10 +95,12 @@ object NotificationHelper {
         val xmsfUid = try {
             context.packageManager.getPackageUid(XMSF_PACKAGE, PackageManager.PackageInfoFlags.of(0))
         } catch (_: PackageManager.NameNotFoundException) {
+            Log.w(TAG, "XMSF package not found, skipping bypass")
             manager.notify(notificationId, notification)
             return
         }
 
+        Log.d(TAG, "Starting Shizuku bypass for XMSF UID: $xmsfUid")
         Thread {
             try {
                 ShizukuHelper.blockNetwork(xmsfUid)
@@ -107,6 +110,7 @@ object NotificationHelper {
                 } finally {
                     ShizukuHelper.unblockNetwork(xmsfUid)
                 }
+                Log.d(TAG, "Shizuku bypass completed successfully")
             } catch (e: Exception) {
                 Log.e(TAG, "Shizuku bypass failed, falling back to normal notify", e)
                 manager.notify(notificationId, notification)
