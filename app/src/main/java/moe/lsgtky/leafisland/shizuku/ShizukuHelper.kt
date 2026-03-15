@@ -35,85 +35,89 @@ object ShizukuHelper {
         Shizuku.removeRequestPermissionResultListener(listener)
     }
 
-    private fun wrapService(serviceName: String, stubClassName: String): Any {
-        val originalBinder = SystemServiceHelper.getSystemService(serviceName)
-        val stubClass = Class.forName(stubClassName)
-        val asInterface = stubClass.getMethod("asInterface", IBinder::class.java)
-        val original = asInterface.invoke(null, originalBinder)!!
-        val binder = original.javaClass.getMethod("asBinder").invoke(original) as IBinder
-        val wrapper = ShizukuBinderWrapper(binder)
-        return asInterface.invoke(null, wrapper)!!
-    }
-
-    /** IConnectivityManager proxy (firewall methods available on Android <= 15) */
-    private val wrappedCM: Any by lazy {
-        wrapService("connectivity", "android.net.IConnectivityManager\$Stub").also {
-            Log.d(TAG, "Hooked IConnectivityManager created")
+    private fun wrapService(serviceName: String, stubClassName: String): Any? {
+        return try {
+            val originalBinder = SystemServiceHelper.getSystemService(serviceName)
+            val stubClass = Class.forName(stubClassName)
+            val asInterface = stubClass.getMethod("asInterface", IBinder::class.java)
+            val original = asInterface.invoke(null, originalBinder)!!
+            val binder = original.javaClass.getMethod("asBinder").invoke(original) as IBinder
+            val wrapper = ShizukuBinderWrapper(binder)
+            asInterface.invoke(null, wrapper)
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to wrap service $serviceName: ${e.message}")
+            null
         }
     }
 
-    /** INetd proxy (stable AIDL, firewall methods should exist across all versions) */
-    private val wrappedNetd: Any by lazy {
-        wrapService("netd", "android.net.INetd\$Stub").also {
-            Log.d(TAG, "Hooked INetd created")
-        }
-    }
+    private val wrappedCM: Any? by lazy { wrapService("connectivity", "android.net.IConnectivityManager\$Stub") }
 
     private fun invokeIfExists(obj: Any, method: String, paramTypes: Array<Class<*>>, args: Array<Any>): Boolean {
         return try {
             obj.javaClass.getMethod(method, *paramTypes).invoke(obj, *args)
             true
-        } catch (e: NoSuchMethodException) {
+        } catch (_: NoSuchMethodException) {
             false
         } catch (e: Exception) {
-            Log.w(TAG, "$method invocation failed: ${e.cause?.message ?: e.message}")
+            Log.w(TAG, "$method failed: ${e.cause?.message ?: e.message}")
             false
         }
     }
 
     /**
-     * Block network for [uid] via FIREWALL_CHAIN_OEM_DENY_3 (chain 9).
-     * Tries IConnectivityManager first, then falls back to INetd.
+     * Execute a shell command via Shizuku (reflection on private Shizuku.newProcess).
+     * Runs as Shizuku's UID (root if Shizuku started via Magisk, shell if via ADB).
+     */
+    private fun execViaShizuku(vararg cmd: String): Int {
+        val method = Shizuku::class.java.getDeclaredMethod(
+            "newProcess",
+            Array<String>::class.java,
+            Array<String>::class.java,
+            String::class.java,
+        )
+        method.isAccessible = true
+        val process = method.invoke(null, cmd, null, null) as Process
+        return process.waitFor()
+    }
+
+    /**
+     * Block network for [uid].
+     * Strategy 1: IConnectivityManager binder (Android <= 15)
+     * Strategy 2: iptables via Shizuku shell (Android 16+, needs root Shizuku)
      */
     fun blockNetwork(uid: Int): Boolean {
-        // Strategy 1: IConnectivityManager (Android <= 15)
-        val cmOk = invokeIfExists(
-            wrappedCM, "setUidFirewallRule",
-            arrayOf(Int::class.javaPrimitiveType!!, Int::class.javaPrimitiveType!!, Int::class.javaPrimitiveType!!),
-            arrayOf(9, uid, 2),
-        )
-        if (cmOk) {
-            invokeIfExists(
-                wrappedCM, "setFirewallChainEnabled",
-                arrayOf(Int::class.javaPrimitiveType!!, Boolean::class.javaPrimitiveType!!),
-                arrayOf(9, true),
-            )
-            Log.d(TAG, "Network BLOCKED for UID: $uid via IConnectivityManager")
-            return true
-        }
-
-        // Strategy 2: INetd (stable AIDL, Android 16+)
-        try {
-            val netd = wrappedNetd
-            val chainOk = invokeIfExists(
-                netd, "firewallEnableChildChain",
-                arrayOf(Int::class.javaPrimitiveType!!, Boolean::class.javaPrimitiveType!!),
-                arrayOf(9, true),
-            )
-            val ruleOk = invokeIfExists(
-                netd, "firewallSetUidRule",
+        // Strategy 1: IConnectivityManager
+        val cm = wrappedCM
+        if (cm != null) {
+            val ok = invokeIfExists(
+                cm, "setUidFirewallRule",
                 arrayOf(Int::class.javaPrimitiveType!!, Int::class.javaPrimitiveType!!, Int::class.javaPrimitiveType!!),
                 arrayOf(9, uid, 2),
             )
-            if (chainOk || ruleOk) {
-                Log.d(TAG, "Network BLOCKED for UID: $uid via INetd")
+            if (ok) {
+                invokeIfExists(
+                    cm, "setFirewallChainEnabled",
+                    arrayOf(Int::class.javaPrimitiveType!!, Boolean::class.javaPrimitiveType!!),
+                    arrayOf(9, true),
+                )
+                Log.d(TAG, "Network BLOCKED for UID: $uid via IConnectivityManager")
                 return true
             }
-        } catch (e: Exception) {
-            Log.w(TAG, "INetd fallback failed: ${e.message}")
         }
 
-        Log.w(TAG, "No firewall API available on this device")
+        // Strategy 2: iptables via Shizuku shell
+        try {
+            val exit = execViaShizuku(
+                "sh", "-c",
+                "iptables -C OUTPUT -m owner --uid-owner $uid -j REJECT 2>/dev/null || iptables -I OUTPUT -m owner --uid-owner $uid -j REJECT",
+            )
+            Log.d(TAG, "Network BLOCKED for UID: $uid via iptables (exit=$exit)")
+            return exit == 0
+        } catch (e: Exception) {
+            Log.w(TAG, "iptables block failed: ${e.message}")
+        }
+
+        Log.w(TAG, "No firewall API available")
         return false
     }
 
@@ -121,27 +125,29 @@ object ShizukuHelper {
      * Unblock network for [uid].
      */
     fun unblockNetwork(uid: Int) {
-        // Try IConnectivityManager
-        val cmOk = invokeIfExists(
-            wrappedCM, "setUidFirewallRule",
-            arrayOf(Int::class.javaPrimitiveType!!, Int::class.javaPrimitiveType!!, Int::class.javaPrimitiveType!!),
-            arrayOf(9, uid, 0),
-        )
-        if (cmOk) {
-            Log.d(TAG, "Network RESTORED for UID: $uid via IConnectivityManager")
-            return
-        }
-
-        // Fallback: INetd
-        try {
-            invokeIfExists(
-                wrappedNetd, "firewallSetUidRule",
+        // Strategy 1: IConnectivityManager
+        val cm = wrappedCM
+        if (cm != null) {
+            val ok = invokeIfExists(
+                cm, "setUidFirewallRule",
                 arrayOf(Int::class.javaPrimitiveType!!, Int::class.javaPrimitiveType!!, Int::class.javaPrimitiveType!!),
                 arrayOf(9, uid, 0),
             )
-            Log.d(TAG, "Network RESTORED for UID: $uid via INetd")
+            if (ok) {
+                Log.d(TAG, "Network RESTORED for UID: $uid via IConnectivityManager")
+                return
+            }
+        }
+
+        // Strategy 2: iptables via Shizuku shell
+        try {
+            val exit = execViaShizuku(
+                "sh", "-c",
+                "iptables -D OUTPUT -m owner --uid-owner $uid -j REJECT 2>/dev/null; true",
+            )
+            Log.d(TAG, "Network RESTORED for UID: $uid via iptables (exit=$exit)")
         } catch (e: Exception) {
-            Log.w(TAG, "INetd unblock failed: ${e.message}")
+            Log.w(TAG, "iptables unblock failed: ${e.message}")
         }
     }
 }
