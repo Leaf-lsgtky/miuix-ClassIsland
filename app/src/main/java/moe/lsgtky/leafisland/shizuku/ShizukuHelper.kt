@@ -37,10 +37,8 @@ object ShizukuHelper {
 
     /**
      * Wrapped IConnectivityManager binder proxy via Shizuku.
-     * All binder transactions are forwarded through Shizuku's privileged process.
-     * We keep the raw Object and use reflection to call methods, because
-     * the interface signature varies across Android versions (API 36 removed
-     * setFirewallChainEnabled from IConnectivityManager).
+     * Uses reflection because the interface signature varies across Android versions
+     * (API 36 removed setFirewallChainEnabled from IConnectivityManager).
      */
     private val wrappedCM: Any by lazy {
         val originalBinder = SystemServiceHelper.getSystemService("connectivity")
@@ -67,31 +65,23 @@ object ShizukuHelper {
 
     /**
      * Block network for [uid] via FIREWALL_CHAIN_OEM_DENY_3 (chain 9).
+     * If the methods don't exist (Android 16+), returns false.
      */
-    fun blockNetwork(uid: Int) {
+    fun blockNetwork(uid: Int): Boolean {
         val cm = wrappedCM
-        // Try setFirewallChainEnabled (available on Android <= 15)
         invokeIfExists(
             cm, "setFirewallChainEnabled",
             arrayOf(Int::class.javaPrimitiveType!!, Boolean::class.javaPrimitiveType!!),
             arrayOf(9, true),
         )
-        // Try setUidFirewallRule: FIREWALL_RULE_DENY = 2
         val ok = invokeIfExists(
             cm, "setUidFirewallRule",
             arrayOf(Int::class.javaPrimitiveType!!, Int::class.javaPrimitiveType!!, Int::class.javaPrimitiveType!!),
             arrayOf(9, uid, 2),
         )
-        if (ok) {
-            Log.d(TAG, "Network BLOCKED for UID: $uid via IConnectivityManager")
-            return
-        }
-        // Fallback: use iptables via Shizuku shell
-        Log.d(TAG, "Falling back to iptables for UID: $uid")
-        val cmd = "iptables -I OUTPUT -m owner --uid-owner $uid -j DROP"
-        val process = Shizuku.newProcess(arrayOf("sh", "-c", cmd), null, null)
-        process.waitFor()
-        Log.d(TAG, "Network BLOCKED for UID: $uid via iptables (exit=${process.exitValue()})")
+        if (ok) Log.d(TAG, "Network BLOCKED for UID: $uid")
+        else Log.w(TAG, "Firewall API not available on this Android version")
+        return ok
     }
 
     /**
@@ -99,21 +89,11 @@ object ShizukuHelper {
      */
     fun unblockNetwork(uid: Int) {
         val cm = wrappedCM
-        // Try setUidFirewallRule: FIREWALL_RULE_DEFAULT = 0
-        val ok = invokeIfExists(
+        invokeIfExists(
             cm, "setUidFirewallRule",
             arrayOf(Int::class.javaPrimitiveType!!, Int::class.javaPrimitiveType!!, Int::class.javaPrimitiveType!!),
             arrayOf(9, uid, 0),
         )
-        if (ok) {
-            Log.d(TAG, "Network RESTORED for UID: $uid via IConnectivityManager")
-            return
-        }
-        // Fallback: remove iptables rule
-        Log.d(TAG, "Falling back to iptables removal for UID: $uid")
-        val cmd = "iptables -D OUTPUT -m owner --uid-owner $uid -j DROP"
-        val process = Shizuku.newProcess(arrayOf("sh", "-c", cmd), null, null)
-        process.waitFor()
-        Log.d(TAG, "Network RESTORED for UID: $uid via iptables (exit=${process.exitValue()})")
+        Log.d(TAG, "Network RESTORED for UID: $uid")
     }
 }
