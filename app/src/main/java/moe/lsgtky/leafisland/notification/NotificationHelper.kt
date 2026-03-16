@@ -65,8 +65,8 @@ object NotificationHelper {
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .addExtras(focusBundle)
             .build()
+            .also { it.extras.putAll(focusBundle) }
 
         val manager = context.getSystemService(NotificationManager::class.java)
         notifyWithBypass(context, manager, NOTIFICATION_ID, notification)
@@ -104,6 +104,7 @@ object NotificationHelper {
             try {
                 blocked = ShizukuHelper.blockNetwork(xmsfUid, XMSF_PACKAGE)
                 Log.d(TAG, "Network block result: $blocked")
+                if (blocked) Thread.sleep(50) // wait for kernel rule to propagate
             } catch (e: Throwable) {
                 Log.w(TAG, "Network block failed: ${e.message}")
             }
