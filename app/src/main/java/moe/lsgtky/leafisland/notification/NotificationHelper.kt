@@ -102,7 +102,7 @@ object NotificationHelper {
         Thread {
             var blocked = false
             try {
-                blocked = ShizukuHelper.blockNetwork(xmsfUid)
+                blocked = ShizukuHelper.blockNetwork(xmsfUid, XMSF_PACKAGE)
                 Log.d(TAG, "Network block result: $blocked")
             } catch (e: Throwable) {
                 Log.w(TAG, "Network block failed: ${e.message}")
@@ -115,7 +115,7 @@ object NotificationHelper {
             } finally {
                 if (blocked) {
                     try {
-                        ShizukuHelper.unblockNetwork(xmsfUid)
+                        ShizukuHelper.unblockNetwork(xmsfUid, XMSF_PACKAGE)
                     } catch (e: Throwable) {
                         Log.w(TAG, "Network unblock failed: ${e.message}")
                     }

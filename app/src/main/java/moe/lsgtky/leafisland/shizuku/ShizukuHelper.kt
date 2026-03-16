@@ -81,11 +81,12 @@ object ShizukuHelper {
     }
 
     /**
-     * Block network for [uid].
-     * Strategy 1: IConnectivityManager binder (Android <= 15)
-     * Strategy 2: iptables via Shizuku shell (Android 16+, needs root Shizuku)
+     * Block network for [packageName] (uid [uid] used as fallback for iptables).
+     * Strategy 1: IConnectivityManager binder hook (Android <= 15)
+     * Strategy 2: cmd connectivity shell command (Android 16+)
+     * Strategy 3: iptables via Shizuku shell (last resort)
      */
-    fun blockNetwork(uid: Int): Boolean {
+    fun blockNetwork(uid: Int, packageName: String): Boolean {
         // Strategy 1: IConnectivityManager
         val cm = wrappedCM
         if (cm != null) {
@@ -100,18 +101,29 @@ object ShizukuHelper {
                     arrayOf(Int::class.javaPrimitiveType!!, Boolean::class.javaPrimitiveType!!),
                     arrayOf(9, true),
                 )
-                Log.d(TAG, "Network BLOCKED for UID: $uid via IConnectivityManager")
+                Log.d(TAG, "Network BLOCKED for $packageName via IConnectivityManager")
                 return true
             }
         }
 
-        // Strategy 2: iptables via Shizuku shell
+        // Strategy 2: cmd connectivity (framework-level, works on Android 16+)
+        try {
+            val chain = execViaShizuku("sh", "-c", "cmd connectivity set-chain3-enabled true")
+            Log.d(TAG, "set-chain3-enabled exit=$chain")
+            val exit = execViaShizuku("sh", "-c", "cmd connectivity set-package-networking-enabled false $packageName")
+            Log.d(TAG, "Network BLOCKED for $packageName via cmd connectivity (exit=$exit)")
+            if (exit == 0) return true
+        } catch (e: Throwable) {
+            Log.w(TAG, "cmd connectivity block failed: ${e.message}")
+        }
+
+        // Strategy 3: iptables via Shizuku shell (kernel-level)
         try {
             val exit = execViaShizuku(
                 "sh", "-c",
                 "iptables -C OUTPUT -m owner --uid-owner $uid -j REJECT 2>/dev/null || iptables -I OUTPUT -m owner --uid-owner $uid -j REJECT",
             )
-            Log.d(TAG, "Network BLOCKED for UID: $uid via iptables (exit=$exit)")
+            Log.d(TAG, "Network BLOCKED for $packageName via iptables (exit=$exit)")
             return exit == 0
         } catch (e: Throwable) {
             Log.w(TAG, "iptables block failed: ${e.message}")
@@ -122,9 +134,9 @@ object ShizukuHelper {
     }
 
     /**
-     * Unblock network for [uid].
+     * Unblock network for [packageName] (uid [uid] used as fallback for iptables).
      */
-    fun unblockNetwork(uid: Int) {
+    fun unblockNetwork(uid: Int, packageName: String) {
         // Strategy 1: IConnectivityManager
         val cm = wrappedCM
         if (cm != null) {
@@ -134,18 +146,27 @@ object ShizukuHelper {
                 arrayOf(9, uid, 0),
             )
             if (ok) {
-                Log.d(TAG, "Network RESTORED for UID: $uid via IConnectivityManager")
+                Log.d(TAG, "Network RESTORED for $packageName via IConnectivityManager")
                 return
             }
         }
 
-        // Strategy 2: iptables via Shizuku shell
+        // Strategy 2: cmd connectivity
+        try {
+            val exit = execViaShizuku("sh", "-c", "cmd connectivity set-package-networking-enabled true $packageName")
+            Log.d(TAG, "Network RESTORED for $packageName via cmd connectivity (exit=$exit)")
+            if (exit == 0) return
+        } catch (e: Throwable) {
+            Log.w(TAG, "cmd connectivity unblock failed: ${e.message}")
+        }
+
+        // Strategy 3: iptables
         try {
             val exit = execViaShizuku(
                 "sh", "-c",
                 "iptables -D OUTPUT -m owner --uid-owner $uid -j REJECT 2>/dev/null; true",
             )
-            Log.d(TAG, "Network RESTORED for UID: $uid via iptables (exit=$exit)")
+            Log.d(TAG, "Network RESTORED for $packageName via iptables (exit=$exit)")
         } catch (e: Throwable) {
             Log.w(TAG, "iptables unblock failed: ${e.message}")
         }
