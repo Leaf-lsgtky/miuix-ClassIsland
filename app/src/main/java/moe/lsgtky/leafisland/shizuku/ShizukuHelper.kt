@@ -87,19 +87,19 @@ object ShizukuHelper {
      * Strategy 3: iptables via Shizuku shell (last resort)
      */
     fun blockNetwork(uid: Int, packageName: String): Boolean {
-        // Strategy 1: IConnectivityManager
+        // Strategy 1: IConnectivityManager (matching InstallerX order: chain first, rule second)
         val cm = wrappedCM
         if (cm != null) {
-            val ok = invokeIfExists(
-                cm, "setUidFirewallRule",
-                arrayOf(Int::class.javaPrimitiveType!!, Int::class.javaPrimitiveType!!, Int::class.javaPrimitiveType!!),
-                arrayOf(9, uid, 2),
+            val chainOk = invokeIfExists(
+                cm, "setFirewallChainEnabled",
+                arrayOf(Int::class.javaPrimitiveType!!, Boolean::class.javaPrimitiveType!!),
+                arrayOf(9, true),
             )
-            if (ok) {
+            if (chainOk) {
                 invokeIfExists(
-                    cm, "setFirewallChainEnabled",
-                    arrayOf(Int::class.javaPrimitiveType!!, Boolean::class.javaPrimitiveType!!),
-                    arrayOf(9, true),
+                    cm, "setUidFirewallRule",
+                    arrayOf(Int::class.javaPrimitiveType!!, Int::class.javaPrimitiveType!!, Int::class.javaPrimitiveType!!),
+                    arrayOf(9, uid, 2),
                 )
                 Log.d(TAG, "Network BLOCKED for $packageName via IConnectivityManager")
                 return true
