@@ -71,5 +71,6 @@ dependencies {
     implementation(libs.tyme4kt)
     implementation(libs.shizuku.api)
     implementation(libs.shizuku.provider)
+    implementation(libs.hiddenapibypass)
     debugImplementation(libs.compose.ui.tooling)
 }

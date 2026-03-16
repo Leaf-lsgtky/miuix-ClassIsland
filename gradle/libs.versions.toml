@@ -9,6 +9,7 @@ core-ktx = "1.16.0"
 lifecycle = "2.9.0"
 tyme4kt = "1.4.3"
 shizuku = "13.1.5"
+hiddenapibypass = "6.1"
 
 [libraries]
 compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "compose-bom" }
@@ -29,6 +30,7 @@ navigation3-runtime = { group = "androidx.navigation3", name = "navigation3-runt
 tyme4kt = { group = "cn.6tail", name = "tyme4kt", version.ref = "tyme4kt" }
 shizuku-api = { group = "dev.rikka.shizuku", name = "api", version.ref = "shizuku" }
 shizuku-provider = { group = "dev.rikka.shizuku", name = "provider", version.ref = "shizuku" }
+hiddenapibypass = { group = "org.lsposed.hiddenapibypass", name = "hiddenapibypass", version.ref = "hiddenapibypass" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
