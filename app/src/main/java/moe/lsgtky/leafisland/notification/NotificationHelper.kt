@@ -130,28 +130,31 @@ object NotificationHelper {
     ): Bundle {
         val bundle = Bundle()
         val courseName = course.summary
-        val timeRange = "${course.startTime.format(timeFormatter)} - ${course.endTime.format(timeFormatter)}"
 
-        // Build V3-compatible custom param JSON
+        // 1. Build Custom Param JSON (Custom RV mode uses miui.focus.param.custom)
         val customParam = buildCustomParamJson(context, course)
         bundle.putString("miui.focus.param.custom", customParam)
 
-        // Standard Focus RVs
+        // 2. Inject Icons Bundle (Required for Island/Ticker icons)
+        val pics = Bundle().apply {
+            val icon = android.graphics.drawable.Icon.createWithResource(context, R.drawable.ic_notification)
+            putParcelable("pic_logo", icon)
+        }
+        bundle.putBundle("miui.focus.pics", pics)
+
+        // 3. Set RemoteViews
         bundle.putParcelable("miui.focus.rv", buildBaseRemoteViews(context, course, R.layout.layout_focus))
         bundle.putParcelable("miui.focus.rvNight", buildBaseRemoteViews(context, course, R.layout.layout_focus_night))
         bundle.putParcelable("miui.focus.rvAod", buildBaseRemoteViews(context, course, R.layout.layout_focus_aod))
         bundle.putParcelable("miui.focus.rv.fullAod", buildBaseRemoteViews(context, course, R.layout.layout_focus_aod))
 
-        // Island Expand RV - Crucial for "Super Island"
+        // Island Expand RV
         val rvIslandExpand = buildIslandExpandRemoteViews(context, course, pendingIntent)
         bundle.putParcelable("miui.focus.rv.island.expand", rvIslandExpand)
 
+        // 4. Legacy/Compatibility Fields
         bundle.putString("miui.focus.ticker", "课程提醒：$courseName")
         
-        // V3 Flags
-        bundle.putBoolean("miui.focus.updatable", true)
-        bundle.putBoolean("miui.focus.enableFloat", true)
-
         return bundle
     }
 
@@ -183,36 +186,46 @@ object NotificationHelper {
         val islandLeftTitle = if (courseName.length > 5) courseName.substring(0, 5) else courseName
         val islandRightTitle = LocationFormatter.toIslandText(course.location)
 
-        // param_island for 摘要态
-        val imageTextInfoLeft = JSONObject().apply {
-            put("type", 1)
-            put("textInfo", JSONObject().apply {
-                put("title", islandLeftTitle)
-            })
-        }
-
-        val bigIslandTextInfo = JSONObject().apply {
-            put("title", islandRightTitle)
-            put("showHighlightColor", true)
-        }
-
+        // param_island for OS3 Super Island
         val bigIslandArea = JSONObject().apply {
-            put("imageTextInfoLeft", imageTextInfoLeft)
-            put("textInfo", bigIslandTextInfo)
+            // Left: Icon + Text
+            put("imageTextInfoLeft", JSONObject().apply {
+                put("type", 1)
+                put("picInfo", JSONObject().apply {
+                    put("type", 1)
+                    put("pic", "pic_logo")
+                })
+                put("textInfo", JSONObject().apply {
+                    put("title", islandLeftTitle)
+                })
+            })
+            // Right: Bold Text
+            put("textInfo", JSONObject().apply {
+                put("title", islandRightTitle)
+                put("showHighlightColor", true)
+            })
         }
 
         val paramIsland = JSONObject().apply {
             put("islandProperty", 1)
             put("bigIslandArea", bigIslandArea)
+            put("smallIslandArea", JSONObject().apply {
+                put("picInfo", JSONObject().apply {
+                    put("type", 1)
+                    put("pic", "pic_logo")
+                })
+            })
         }
 
-        // Custom param JSON
+        // Final flat JSON for miui.focus.param.custom
         val customParam = JSONObject().apply {
             put("ticker", "课程提醒：$courseName")
+            put("tickerPic", "pic_logo")
             put("aodTitle", courseName)
             put("enableFloat", true)
             put("updatable", true)
             put("isShowNotification", true)
+            put("islandFirstFloat", true) // Auto-expand when first shown
             put("timeout", 60)
             put("param_island", paramIsland)
         }
