@@ -188,13 +188,9 @@ object NotificationHelper {
 
         // param_island for OS3 Super Island
         val bigIslandArea = JSONObject().apply {
-            // Left: Icon + Text
+            // Left: Text only (Removed picInfo to hide icon in Big Island)
             put("imageTextInfoLeft", JSONObject().apply {
                 put("type", 1)
-                put("picInfo", JSONObject().apply {
-                    put("type", 1)
-                    put("pic", "pic_logo")
-                })
                 put("textInfo", JSONObject().apply {
                     put("title", islandLeftTitle)
                 })
