@@ -232,4 +232,35 @@ object NotificationHelper {
 
         return customParam.toString()
     }
+
+    private fun buildIslandExpandRemoteViews(
+        context: Context,
+        course: CourseEvent,
+        pendingIntent: PendingIntent,
+    ): RemoteViews {
+        val rv = RemoteViews(context.packageName, R.layout.layout_island_expand)
+        val timeRange = "${course.startTime.format(timeFormatter)} - ${course.endTime.format(timeFormatter)}"
+
+        rv.setTextViewText(R.id.island_course_name, course.summary)
+        rv.setTextViewText(R.id.island_time, timeRange)
+        rv.setTextViewText(R.id.island_location, course.location)
+
+        if (course.section.isNotBlank()) {
+            rv.setTextViewText(R.id.island_section, course.section)
+            rv.setViewVisibility(R.id.island_section_row, View.VISIBLE)
+        } else {
+            rv.setViewVisibility(R.id.island_section_row, View.GONE)
+        }
+
+        if (course.teacher.isNotBlank()) {
+            rv.setTextViewText(R.id.island_teacher, course.teacher)
+            rv.setViewVisibility(R.id.island_teacher_row, View.VISIBLE)
+        } else {
+            rv.setViewVisibility(R.id.island_teacher_row, View.GONE)
+        }
+
+        rv.setOnClickPendingIntent(R.id.island_expand_root, pendingIntent)
+
+        return rv
+    }
 }
