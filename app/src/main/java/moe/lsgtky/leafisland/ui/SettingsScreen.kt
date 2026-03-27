@@ -11,9 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.TimeInput
-import androidx.compose.material3.rememberTimePickerState
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -38,6 +36,7 @@ import java.time.LocalDate
 import java.time.LocalTime
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.NumberPicker
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -57,7 +56,6 @@ import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import java.io.File
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
@@ -81,11 +79,8 @@ fun SettingsScreen(
     val showTimePickerDialog = remember { mutableStateOf(false) }
     val showDeleteDialog = remember { mutableStateOf(false) }
     var deleteTargetPush by remember { mutableStateOf<ScheduledPush?>(null) }
-    val timePickerState = rememberTimePickerState(
-        initialHour = 22,
-        initialMinute = 0,
-        is24Hour = true,
-    )
+    var pickerHour by remember { mutableIntStateOf(22) }
+    var pickerMinute by remember { mutableIntStateOf(0) }
     var dismissSliderValue by remember { mutableFloatStateOf(30f) }
 
     // --- Widget log state ---
@@ -343,7 +338,34 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                TimeInput(state = timePickerState)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    NumberPicker(
+                        value = pickerHour,
+                        onValueChange = { pickerHour = it },
+                        range = 0..23,
+                        label = { it.toString().padStart(2, '0') },
+                        wrapAround = true,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Text(
+                        text = ":",
+                        fontSize = 20.sp,
+                    )
+                    NumberPicker(
+                        value = pickerMinute,
+                        onValueChange = { pickerMinute = it },
+                        range = 0..59,
+                        label = { it.toString().padStart(2, '0') },
+                        wrapAround = true,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(text = "通知消失时间：${dismissSliderValue.toInt()} 分钟")
                 Slider(
@@ -367,8 +389,8 @@ fun SettingsScreen(
                         onClick = {
                             val newPush = ScheduledPush(
                                 id = System.currentTimeMillis(),
-                                hour = timePickerState.hour,
-                                minute = timePickerState.minute,
+                                hour = pickerHour,
+                                minute = pickerMinute,
                                 dismissMinutes = dismissSliderValue.toInt(),
                             )
                             val updated = scheduledPushes + newPush
