@@ -22,29 +22,31 @@ import java.time.format.DateTimeFormatter
 
 object NotificationHelper {
 
-    const val CHANNEL_ID = "course_reminders"
+    const val CHANNEL_ADVANCE = "course_reminders"
+    const val CHANNEL_SCHEDULED = "scheduled_push"
     const val NOTIFICATION_ID = 1001
-    private const val CHANNEL_NAME = "课程提醒"
     private const val TAG = "NotificationHelper"
     private const val XMSF_PACKAGE = "com.xiaomi.xmsf"
     private const val BLIND_WINDOW_MS = 100L
     private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 
     fun createNotificationChannel(context: Context) {
-        val channel = NotificationChannel(
-            CHANNEL_ID,
-            CHANNEL_NAME,
-            NotificationManager.IMPORTANCE_HIGH,
-        ).apply {
-            description = "上课前提醒通知"
-            enableLights(true)
-            enableVibration(true)
-        }
         val manager = context.getSystemService(NotificationManager::class.java)
-        manager.createNotificationChannel(channel)
+        manager.createNotificationChannel(
+            NotificationChannel(CHANNEL_ADVANCE, "提前提醒", NotificationManager.IMPORTANCE_HIGH).apply {
+                description = "上课前提前提醒通知"
+                enableLights(true)
+                enableVibration(true)
+            }
+        )
+        manager.createNotificationChannel(
+            NotificationChannel(CHANNEL_SCHEDULED, "定时推送", NotificationManager.IMPORTANCE_DEFAULT).apply {
+                description = "按设定时间定时推送下节课信息"
+            }
+        )
     }
 
-    fun postCourseNotification(context: Context, course: CourseEvent) {
+    fun postCourseNotification(context: Context, course: CourseEvent, channelId: String = CHANNEL_ADVANCE) {
         val tapIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
@@ -58,7 +60,7 @@ object NotificationHelper {
         val timeRange = "${course.startTime.format(timeFormatter)} - ${course.endTime.format(timeFormatter)}"
         val focusBundle = buildFocusBundle(context, course, pendingIntent)
 
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+        val notification = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(course.summary)
             .setContentText("$timeRange  ${course.location}")

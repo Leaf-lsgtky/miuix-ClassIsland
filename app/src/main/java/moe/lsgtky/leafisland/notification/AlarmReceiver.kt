@@ -72,7 +72,7 @@ class AlarmReceiver : BroadcastReceiver() {
             ?: tomorrowCourses.firstOrNull()
 
         if (nextCourse != null) {
-            NotificationHelper.postCourseNotification(context, nextCourse)
+            NotificationHelper.postCourseNotification(context, nextCourse, NotificationHelper.CHANNEL_SCHEDULED)
 
             // Schedule auto-dismiss
             val dismissMinutes = intent.getIntExtra(EXTRA_DISMISS_MINUTES, 30)
