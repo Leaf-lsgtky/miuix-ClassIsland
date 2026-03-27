@@ -99,30 +99,22 @@ object NotificationHelper {
             return
         }
 
-        // Must run in background to avoid blocking main thread during delay()
-        Thread {
-            var blocked = false
-            try {
-                // 1. Block network synchronously before notify
-                blocked = ShizukuHelper.blockNetwork(xmsfUid, XMSF_PACKAGE)
-                
-                // 2. Dispatch notification
-                manager.notify(notificationId, notification)
+        // 1. SYNC BLOCK (Important to prevent race)
+        val blocked = ShizukuHelper.blockNetwork(xmsfUid)
+        
+        // 2. IMMEDIATE NOTIFY
+        manager.notify(notificationId, notification)
 
-                // 3. Keep blocked for a window to bypass async scan
-                if (blocked) {
+        // 3. ASYNC RESTORE
+        if (blocked) {
+            // Use a temporary thread or coroutine to restore network after window
+            Thread {
+                try {
                     Thread.sleep(BLIND_WINDOW_MS)
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Bypass execution failed", e)
-                // Fallback notify if something crashed before notify
-                manager.notify(notificationId, notification)
-            } finally {
-                if (blocked) {
-                    ShizukuHelper.unblockNetwork(xmsfUid, XMSF_PACKAGE)
-                }
-            }
-        }.start()
+                } catch (_: Exception) {}
+                ShizukuHelper.unblockNetwork(xmsfUid)
+            }.start()
+        }
     }
 
     private fun buildFocusBundle(
