@@ -2,7 +2,7 @@
 agp = "8.9.1"
 kotlin = "2.3.0"
 compose-bom = "2025.02.00"
-miuix = "0.8.5"
+miuix = "0.8.8"
 navigation3 = "1.0.0-alpha04"
 activity-compose = "1.10.1"
 core-ktx = "1.16.0"

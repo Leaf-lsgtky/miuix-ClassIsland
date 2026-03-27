@@ -356,6 +356,7 @@ fun SettingsScreen(
                     Text(
                         text = ":",
                         fontSize = 20.sp,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                     )
                     NumberPicker(
                         value = pickerMinute,
